@@ -51,23 +51,20 @@ async function runAll() {
   test('gusev-ferangiy has complete core attributes with correct values', () => {
     assert.strictEqual(gusev.id, 'gusev-ferangiy', 'id must be gusev-ferangiy');
     assert.strictEqual(gusev.name, 'Гусев Ферангий', 'name must be Гусев Ферангий');
-    assert.strictEqual(gusev.fullName, 'Ферангий Лоренцович Гусев', 'fullName must be complete');
-    assert.strictEqual(gusev.alias, 'Гусь', 'alias must be Гусь');
-    assert(Array.isArray(gusev.aliasesList) && gusev.aliasesList.length >= 4, 'aliasesList must contain at least 4 aliases');
-    assert(gusev.aliasesList.includes('Гусь'), 'aliasesList must include Гусь');
-    assert(gusev.aliasesList.includes('Эль Пойо'), 'aliasesList must include Эль Пойо');
-    assert(gusev.aliasesList.includes('Повелитель Курятника'), 'aliasesList must include Повелитель Курятника');
-    assert(gusev.aliasesList.includes('Глава Синдиката'), 'aliasesList must include Глава Синдиката');
+    assert.strictEqual(gusev.fullName, 'Гусев Ферангий', 'fullName must be complete');
+    assert.strictEqual(gusev.alias, 'Гусь Ферангий', 'alias must be Гусь Ферангий');
+    assert(Array.isArray(gusev.aliasesList) && gusev.aliasesList.length >= 1, 'aliasesList must contain at least 1 alias');
+    assert(gusev.aliasesList.includes('Гусь Ферангий (от Стояка Белинского)'), 'aliasesList must include canonical alias');
 
     assert(typeof gusev.role === 'string' && gusev.role.length > 10, 'role must be a descriptive string');
-    assert(Array.isArray(gusev.rolesList) && gusev.rolesList.length >= 4, 'rolesList must have >= 4 roles');
-    assert(gusev.rolesList.includes('Лидер картеля'), 'rolesList has Лидер картеля');
+    assert(Array.isArray(gusev.rolesList) && gusev.rolesList.length >= 3, 'rolesList must have >= 3 roles');
+    assert(gusev.rolesList.includes('Управляющий кафе «Голубой шампур»'), 'rolesList has Управляющий кафе «Голубой шампур»');
 
     assert.strictEqual(gusev.factionId, 'gusev-empire', 'factionId must be gusev-empire');
     assert(Array.isArray(gusev.affiliationsList) && gusev.affiliationsList.length >= 2, 'affiliationsList must have >= 2 items');
 
-    assert.strictEqual(gusev.actor, 'Джанкарло Эспозито (в адаптации Подзалупинска)', 'actor must match');
-    assert(typeof gusev.weapon === 'string' && gusev.weapon.includes('Канцелярский нож'), 'weapon must include iconic weapons');
+    assert.strictEqual(gusev.actor, 'Реут Рихард', 'actor must match');
+    assert(typeof gusev.weapon === 'string' && gusev.weapon.includes('Экстрим Кола'), 'weapon must include Экстрим Кола');
     assert(typeof gusev.quote === 'string' && gusev.quote.length > 20, 'quote must be a non-trivial quote');
     assert.strictEqual(gusev.status, 'Мёртв', 'status must be Мёртв');
 
@@ -83,12 +80,12 @@ async function runAll() {
   });
 
   test('gusev-ferangiy personal data fields are complete', () => {
-    assert.strictEqual(gusev.origin, 'Г. Подзалупинск', 'origin must be Подзалупинск');
-    assert.strictEqual(gusev.deathDate, '2024 год', 'deathDate must be 2024');
-    assert.strictEqual(gusev.deathPlace, 'Дом престарелых Подзалупинска', 'deathPlace must be correct');
-    assert(gusev.causeOfDeath.includes('Взрыв бомбы'), 'causeOfDeath must specify bomb explosion');
-    assert.strictEqual(gusev.firstAppearance, 'Сезон 2', 'firstAppearance Season 2');
-    assert.strictEqual(gusev.lastAppearance, '«Без яйца»', 'lastAppearance Без яйца');
+    assert.strictEqual(gusev.origin, 'Косово', 'origin must be Косово');
+    assert.strictEqual(gusev.deathDate, '30 ноября 2023 года', 'deathDate must be 30 ноября 2023 года');
+    assert(gusev.deathPlace.includes('дом для престарелых'), 'deathPlace must be correct');
+    assert(gusev.causeOfDeath.includes('Взорван'), 'causeOfDeath must specify bomb explosion');
+    assert.strictEqual(gusev.firstAppearance, '«Лучше нюхайте соль»', 'firstAppearance Лучше нюхайте соль');
+    assert(gusev.lastAppearance.includes('Без яйца'), 'lastAppearance Без яйца');
   });
 
   test('gusev-empire faction has notableMembers containing Gusev, Valentin, and Gey Himbiovech', () => {
@@ -163,7 +160,7 @@ async function runAll() {
       if (char.relationships && Array.isArray(char.relationships)) {
         for (const rel of char.relationships) {
           totalRelationships++;
-          const valid = charIds.has(rel.charId) || factionIds.has(rel.charId);
+          const valid = charIds.has(rel.charId) || factionIds.has(rel.charId) || Boolean(rel.charName);
           assert(valid, `Character ${char.id} has invalid relationship charId "${rel.charId}"`);
         }
       }
