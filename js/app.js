@@ -3,12 +3,108 @@
  * Интерактивная навигация, маршрутизация, поиск, генерация инфобоксов и локальное сохранение.
  */
 
+// Отказоустойчивое хранилище с fallback в оперативную память при SecurityError / QuotaExceededError
+const safeStorage = {
+  _memory: new Map(),
+  getItem(key, defaultValue = null) {
+    if (this._memory.has(key)) {
+      const val = this._memory.get(key);
+      return val !== null ? val : defaultValue;
+    }
+    try {
+      if (typeof localStorage !== 'undefined') {
+        const val = localStorage.getItem(key);
+        if (val !== null) {
+          this._memory.set(key, val);
+          return val;
+        }
+      }
+    } catch (e) {}
+    return defaultValue;
+  },
+  setItem(key, value) {
+    const strVal = String(value);
+    this._memory.set(key, strVal);
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(key, strVal);
+      }
+    } catch (e) {}
+  },
+  removeItem(key) {
+    this._memory.set(key, null);
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem(key);
+      }
+    } catch (e) {}
+  },
+  clear() {
+    this._memory.clear();
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.clear();
+      }
+    } catch (e) {}
+  }
+};
+
+// Утилита дебаунсинга для поисковых инпутов (150ms)
+function debounce(func, wait = 150, immediate = true) {
+  let timeout;
+  return function(...args) {
+    const context = this;
+    const callNow = immediate && !timeout;
+    clearTimeout(timeout);
+    timeout = setTimeout(() => {
+      timeout = null;
+      func.apply(context, args);
+    }, wait);
+    if (callNow) {
+      func.apply(context, args);
+    }
+  };
+}
+
+// Предкомпилированные сущности для энциклопедической викификации текста
+const WIKI_ENTITIES = [
+  { pattern: /Валентин(?:а)?\s+(?:«Белый»\s+)?Белинск(?:ий|ого|ому|им|ом)\s+Агафонович/i, href: '#character/valentin-belinsky', id: 'valentin-belinsky' },
+  { pattern: /Валентин(?:а)?\s+Белинск(?:ий|ого|ому|им|ом)/i, href: '#character/valentin-belinsky', id: 'valentin-belinsky' },
+  { pattern: /Наркоимпери(?:я|и|ю|ей)\s+Хуйзенберга/i, href: '#faction/huizenberg-empire', id: 'huizenberg-empire' },
+  { pattern: /Наркоимпери(?:я|и|ю|ей)\s+Гусева\s+Ферангия/i, href: '#faction/gusev-empire', id: 'gusev-empire' },
+  { pattern: /Хуйзенберг(?:а|у|ом|е)?/i, href: '#character/valentin-belinsky', id: 'valentin-belinsky' },
+  { pattern: /Стояк(?:а)?\s+Геннадьевич(?:а)?\s+Шрейдеров(?:а)?/i, href: '#character/stoyak-belinsky', id: 'stoyak-belinsky' },
+  { pattern: /Стояк(?:а)?\s+Белинск(?:ий|ого|ому|им|ом)/i, href: '#character/stoyak-belinsky', id: 'stoyak-belinsky' },
+  { pattern: /Скулер\s+Белинск(?:ая|ой|ую)/i, href: '#character/skyler-belinskaya', id: 'skyler-belinskaya' },
+  { pattern: /Сосик(?:а)?\s+\(Джимми\)\s+Гудманов(?:а)?/i, href: '#character/sosik-goodman', id: 'sosik-goodman' },
+  { pattern: /Сосик(?:а)?\s+Гудман(?:а|у|ом|е)?/i, href: '#character/sosik-goodman', id: 'sosik-goodman' },
+  { pattern: /Гусев(?:а)?\s+Феранги(?:й|я|ю|ем|е)/i, href: '#character/gusev-ferangiy', id: 'gusev-ferangiy' },
+  { pattern: /Гей\s+Анальн(?:ый|ого)\s+Химбиович(?:а)?/i, href: '#character/gey-himbiovech', id: 'gey-himbiovech' },
+  { pattern: /Гей(?:я)?\s+Химбиович(?:а|у|ем|е)?/i, href: '#character/gey-himbiovech', id: 'gey-himbiovech' },
+  { pattern: /Гей(?:я)?\s+Химирович(?:а|у|ем|е)?/i, href: '#character/gey-himbiovech', id: 'gey-himbiovech' },
+  { pattern: /Хербиович(?:а|у|ем|е)?/i, href: '#character/gey-himbiovech', id: 'gey-himbiovech' },
+  { pattern: /Жесси\s+рiзiв(?:ым|ого|ому|ый)\s+пiрн(?:ем|я|ю|ь)/i, href: '#character/jesse-pinkman', id: 'jesse-pinkman' },
+  { pattern: /Джесси\s+Розов(?:ый|ого|ому|ым|ом)/i, href: '#character/jesse-pinkman', id: 'jesse-pinkman' },
+  { pattern: /Жесси\s+Розов(?:ый|ого|ому|ым|ом)/i, href: '#character/jesse-pinkman', id: 'jesse-pinkman' },
+  { pattern: /ОБН\s+Подзалупинска/i, href: '#faction/obn-podzalupinsk', id: 'obn-podzalupinsk' },
+  { pattern: /«Пилот\s+Мефедрона»|«Пилот\s+мефедрона»/i, href: '#timeline', id: 'timeline' },
+  { pattern: /«Хуелина»/i, href: '#timeline', id: 'timeline' },
+  { pattern: /«Путь\s+розового\?»/i, href: '#timeline', id: 'timeline' },
+  { pattern: /«Полная\s+и\s+жирная\s+мера»/i, href: '#timeline', id: 'timeline' },
+  { pattern: /«Без\s+яйца»/i, href: '#timeline', id: 'timeline' },
+  { pattern: /«Озимандий\s+по-русски»/i, href: '#timeline', id: 'timeline' },
+  { pattern: /«Звоните\s+Сосику»/i, href: '#timeline', id: 'timeline' },
+  { pattern: /г\.\s+Подзалупинск(?:а|у|ом|е)?|Подзалупинск(?:а|у|ом|е)?/i, href: null, isPlace: true }
+];
+
+const WIKI_PATTERN = new RegExp(WIKI_ENTITIES.map(e => `(${e.pattern.source})`).join('|'), 'gi');
+
 // Состояние приложения
 const STATE = {
   data: null,
   currentView: 'home',
   currentId: null,
-  theme: localStorage.getItem('wiki_theme') || 'dark',
+  theme: safeStorage.getItem('wiki_theme', 'dark'),
   searchQuery: '',
   searchFilter: 'all',
   selectedSearchIndex: -1
@@ -35,32 +131,11 @@ document.addEventListener('DOMContentLoaded', () => {
    ========================================================================== */
 
 function initData() {
-  const savedData = localStorage.getItem('wiki_lore_data');
-  if (savedData) {
-    try {
-      const parsed = JSON.parse(savedData);
-      // Проверяем версию или старые тестовые данные
-      if (!parsed.version || parsed.version !== DEFAULT_WIKI_DATA.version || (parsed.universe && parsed.universe.title === "Aethelgard Chronicles")) {
-        console.log("Обновление базы до актуальной версии " + DEFAULT_WIKI_DATA.version + "...");
-        STATE.data = JSON.parse(JSON.stringify(DEFAULT_WIKI_DATA));
-        saveData();
-      } else {
-        STATE.data = parsed;
-      }
-    } catch (e) {
-      console.warn('Ошибка чтения localStorage. Возврат к дефолту.', e);
-      STATE.data = JSON.parse(JSON.stringify(DEFAULT_WIKI_DATA));
-      saveData();
-    }
-  } else {
-    STATE.data = JSON.parse(JSON.stringify(DEFAULT_WIKI_DATA));
-    saveData();
-  }
+  STATE.data = DEFAULT_WIKI_DATA;
   updateStats();
 }
 
 function saveData() {
-  localStorage.setItem('wiki_lore_data', JSON.stringify(STATE.data));
   updateStats();
 }
 
@@ -83,12 +158,14 @@ function initTheme() {
   updateThemeIcon();
 
   const toggleBtn = document.getElementById('themeToggleBtn');
-  toggleBtn.addEventListener('click', () => {
-    STATE.theme = STATE.theme === 'dark' ? 'light' : 'dark';
-    document.documentElement.setAttribute('data-theme', STATE.theme);
-    localStorage.setItem('wiki_theme', STATE.theme);
-    updateThemeIcon();
-  });
+  if (toggleBtn) {
+    toggleBtn.addEventListener('click', () => {
+      STATE.theme = STATE.theme === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', STATE.theme);
+      safeStorage.setItem('wiki_theme', STATE.theme);
+      updateThemeIcon();
+    });
+  }
 }
 
 function updateThemeIcon() {
@@ -131,9 +208,26 @@ function handleRoute() {
   const parts = path.split('/');
   const route = parts[0];
   const id = parts[1] || null;
+  const viewport = document.getElementById('contentViewport');
+
+  // Закрываем активные модальные окна при смене роута
+  const sModal = document.getElementById('searchModal');
+  if (sModal && !sModal.classList.contains('hidden')) sModal.classList.add('hidden');
+  const aModal = document.getElementById('architectureModal');
+  if (aModal && !aModal.classList.contains('hidden')) aModal.classList.add('hidden');
 
   // Если это якорная ссылка содержания (например, #sec-biography), скроллим к разделу и не перерисовываем страницу
   if (route.startsWith('sec-')) {
+    if (!viewport || !viewport.children || viewport.children.length === 0) {
+      if (viewport) {
+        renderHomeView(viewport);
+        updateBreadcrumbs([
+          { title: 'Вики', link: '#home' },
+          { title: 'Главная страница' }
+        ]);
+        document.title = '«Во Все Хуёвые» — Энциклопедия криминального Подзалупинска';
+      }
+    }
     const targetSection = document.getElementById(route);
     if (targetSection) {
       targetSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -149,11 +243,11 @@ function handleRoute() {
     btn.classList.toggle('active', btn.getAttribute('data-view') === route);
   });
 
-  const viewport = document.getElementById('contentViewport');
   window.scrollTo({ top: 0, behavior: 'smooth' });
 
   switch (route) {
     case 'characters':
+      document.title = 'Персонажи — «Во Все Хуёвые» Wiki';
       renderCharactersDirectory(viewport, params);
       updateBreadcrumbs([
         { title: 'Вики', link: '#home' },
@@ -163,6 +257,8 @@ function handleRoute() {
 
     case 'character':
       if (id) {
+        const char = STATE.data.characters.find(c => c.id === id);
+        document.title = `${char ? char.name : 'Персонаж'} — «Во Все Хуёвые» Wiki`;
         renderCharacterArticle(viewport, id);
       } else {
         window.location.hash = '#characters';
@@ -170,6 +266,7 @@ function handleRoute() {
       break;
 
     case 'factions':
+      document.title = 'Группировки — «Во Все Хуёвые» Wiki';
       renderFactionsDirectory(viewport);
       updateBreadcrumbs([
         { title: 'Вики', link: '#home' },
@@ -179,6 +276,8 @@ function handleRoute() {
 
     case 'faction':
       if (id) {
+        const faction = STATE.data.factions.find(f => f.id === id);
+        document.title = `${faction ? faction.name : 'Группировка'} — «Во Все Хуёвые» Wiki`;
         renderFactionArticle(viewport, id);
       } else {
         window.location.hash = '#factions';
@@ -186,6 +285,7 @@ function handleRoute() {
       break;
 
     case 'episodes':
+      document.title = 'Серии — «Во Все Хуёвые» Wiki';
       renderEpisodesPlaceholder(viewport);
       updateBreadcrumbs([
         { title: 'Вики', link: '#home' },
@@ -194,6 +294,7 @@ function handleRoute() {
       break;
 
     case 'timeline':
+      document.title = 'Хронология — «Во Все Хуёвые» Wiki';
       renderTimelineView(viewport);
       updateBreadcrumbs([
         { title: 'Вики', link: '#home' },
@@ -203,6 +304,7 @@ function handleRoute() {
 
     case 'home':
     default:
+      document.title = '«Во Все Хуёвые» — Энциклопедия криминального Подзалупинска';
       renderHomeView(viewport);
       updateBreadcrumbs([
         { title: 'Вики', link: '#home' },
@@ -261,7 +363,7 @@ function renderHomeView(container) {
           </div>
           <div style="flex: 1; min-width: 260px;">
             <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 6px;">
-              <h3 style="font-family: var(--font-heading); font-size: 24px; color: var(--text-primary); margin: 0;">${escapeHtml(valentin.name)}</h3>
+              <h3 style="font-family: var(--font-heading); font-size: 24px; color: var(--text-primary); margin: 0;"><a href="#character/${valentin.id}" class="card-title-link" style="color:inherit; text-decoration:none;">${escapeHtml(valentin.name)}</a></h3>
               <span class="status-badge status-${getStatusClass(valentin.status)}">${escapeHtml(valentin.status)}</span>
             </div>
             <div style="font-size: 13.5px; font-family: var(--font-mono); color: var(--accent-primary); margin-bottom: 12px;">
@@ -311,18 +413,18 @@ function renderCharactersDirectory(container, params = null) {
     <!-- Фильтры и поиск по каталогу -->
     <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 14px 18px; margin-bottom: 24px; display: flex; flex-wrap: wrap; gap: 14px; align-items: center;">
       <div style="flex: 1; min-width: 220px;">
-        <input type="text" id="dirSearchInput" placeholder="Поиск по имени, кличке или роли..." 
+        <input type="text" id="dirSearchInput" placeholder="Поиск по имени, кличке или роли..." aria-label="Поиск персонажей по имени, кличке или роли"
                style="width: 100%; background: var(--bg-primary); border: 1px solid var(--border-color); color: var(--text-primary); padding: 8px 12px; border-radius: var(--radius-sm); font-size: 13.5px;">
       </div>
       
       <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-        <label style="font-size: 13px; font-weight: 600; color: var(--text-secondary);">Группировка:</label>
+        <label for="dirFactionFilter" style="font-size: 13px; font-weight: 600; color: var(--text-secondary);">Группировка:</label>
         <select id="dirFactionFilter" style="background: var(--bg-primary); border: 1px solid var(--border-color); color: var(--text-primary); padding: 8px 12px; border-radius: var(--radius-sm); font-size: 13px;">
           <option value="all">Все группировки</option>
           ${factions.map(f => `<option value="${f.id}">${escapeHtml(f.name)}</option>`).join('')}
         </select>
 
-        <label style="font-size: 13px; font-weight: 600; color: var(--text-secondary);">Статус:</label>
+        <label for="dirStatusFilter" style="font-size: 13px; font-weight: 600; color: var(--text-secondary);">Статус:</label>
         <select id="dirStatusFilter" style="background: var(--bg-primary); border: 1px solid var(--border-color); color: var(--text-primary); padding: 8px 12px; border-radius: var(--radius-sm); font-size: 13px;">
           <option value="all">Все статусы</option>
           <option value="Жив">Жив</option>
@@ -334,6 +436,7 @@ function renderCharactersDirectory(container, params = null) {
     </div>
 
     <!-- Сетка карточек -->
+    <h2 class="visually-hidden">Список персонажей</h2>
     <div class="cards-grid" id="directoryCardsGrid">
       ${characters.map(char => renderCharacterCardHtml(char)).join('')}
     </div>
@@ -390,7 +493,7 @@ function renderCharactersDirectory(container, params = null) {
     }
   }
 
-  input.addEventListener('input', applyFilter);
+  input.addEventListener('input', debounce(applyFilter, 150));
   factionSelect.addEventListener('change', applyFilter);
   statusSelect.addEventListener('change', applyFilter);
 
@@ -421,9 +524,42 @@ function renderCharacterArticle(container, charId) {
   ]);
 
   // Разделение биографии на абзацы с авто-викификацией
-  const bioParagraphs = char.biography 
-    ? char.biography.split('\n\n').filter(p => p.trim().length > 0).map(p => `<p>${renderWikiProse(p, char.id)}</p>`).join('')
+  const bioArray = char.biography
+    ? (Array.isArray(char.biography) ? char.biography : char.biography.split('\n\n'))
+    : [];
+  const bioParagraphs = bioArray.length > 0
+    ? bioArray.filter(p => p.trim().length > 0).map(p => `<p>${renderWikiProse(p, char.id)}</p>`).join('')
     : '<p>Подробная биография еще не задокументирована архивариусами Подзалупинска.</p>';
+
+  let sectionIndex = 1;
+  const tocItems = [];
+
+  const overviewNum = sectionIndex++;
+  tocItems.push({ id: 'sec-overview', num: overviewNum, title: 'Общие сведения' });
+
+  const bioNum = sectionIndex++;
+  tocItems.push({ id: 'sec-biography', num: bioNum, title: 'Биография' });
+
+  let personalityNum = null;
+  if (char.personality) {
+    personalityNum = sectionIndex++;
+    tocItems.push({ id: 'sec-personality', num: personalityNum, title: 'Личность и характер' });
+  }
+
+  let relationshipsNum = null;
+  if (char.relationships && char.relationships.length) {
+    relationshipsNum = sectionIndex++;
+    tocItems.push({ id: 'sec-relationships', num: relationshipsNum, title: 'Связи и отношения' });
+  }
+
+  let triviaNum = null;
+  if (char.trivia && char.trivia.length) {
+    triviaNum = sectionIndex++;
+    tocItems.push({ id: 'sec-trivia', num: triviaNum, title: 'Интересные факты' });
+  }
+
+  const categoriesNum = sectionIndex++;
+  tocItems.push({ id: 'sec-categories', num: categoriesNum, title: 'Категории' });
 
   container.innerHTML = `
     <article class="article-container">
@@ -463,10 +599,10 @@ function renderCharacterArticle(container, charId) {
       </div>
 
       <!-- Основное тело статьи со всплывающим инфобоксом справа -->
-      <div class="article-main-wrapper">
+      <div class="article-main-wrapper article-body">
         
         <!-- КЛАССИЧЕСКИЙ FANDOM ИНФОБОКС -->
-        <aside class="wiki-infobox">
+        <aside class="wiki-infobox infobox">
           <div class="infobox-title">${escapeHtml(char.fullName || char.name)}</div>
           
           <div class="infobox-image-wrapper">
@@ -659,25 +795,20 @@ function renderCharacterArticle(container, charId) {
         ` : ''}
 
         <!-- Содержание статьи (TOC) -->
-        <nav class="wiki-toc">
+        <nav class="wiki-toc toc-box">
           <div class="toc-header">
             <span class="toc-title">Содержание</span>
             <button class="toc-toggle-btn" id="tocToggleBtn">[скрыть]</button>
           </div>
           <ol class="toc-list" id="tocList">
-            <li><a href="#sec-overview"><span class="toc-num">1</span>Общие сведения</a></li>
-            <li><a href="#sec-biography"><span class="toc-num">2</span>Биография</a></li>
-            ${char.personality ? `<li><a href="#sec-personality"><span class="toc-num">3</span>Личность и характер</a></li>` : ''}
-            ${char.relationships && char.relationships.length ? `<li><a href="#sec-relationships"><span class="toc-num">${char.personality ? '4' : '3'}</span>Связи и отношения</a></li>` : ''}
-            ${char.trivia && char.trivia.length ? `<li><a href="#sec-trivia"><span class="toc-num">${char.personality ? (char.relationships && char.relationships.length ? '5' : '4') : (char.relationships && char.relationships.length ? '4' : '3')}</span>Интересные факты</a></li>` : ''}
-            <li><a href="#sec-categories"><span class="toc-num">${char.personality ? (char.relationships && char.relationships.length ? (char.trivia && char.trivia.length ? '6' : '5') : '4') : '4'}</span>Категории</a></li>
+            ${tocItems.map(item => `<li><a href="#${item.id}"><span class="toc-num">${item.num}</span>${escapeHtml(item.title)}</a></li>`).join('')}
           </ol>
         </nav>
 
         <!-- Раздел 1: Общие сведения -->
         <section class="wiki-section" id="sec-overview">
           <h2 class="wiki-section-heading">
-            <span><span class="mw-headline-number">1.</span> Общие сведения</span>
+            <span><span class="mw-headline-number">${overviewNum}.</span> Общие сведения</span>
             <span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="javascript:void(0)" onclick="openArchitectureModal('sections')">архитектура</a><span class="mw-editsection-bracket">]</span></span>
           </h2>
           <div class="wiki-section-body">
@@ -688,7 +819,7 @@ function renderCharacterArticle(container, charId) {
         <!-- Раздел 2: Биография -->
         <section class="wiki-section" id="sec-biography">
           <h2 class="wiki-section-heading">
-            <span><span class="mw-headline-number">2.</span> Биография</span>
+            <span><span class="mw-headline-number">${bioNum}.</span> Биография</span>
             <span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="javascript:void(0)" onclick="openArchitectureModal('sections')">архитектура</a><span class="mw-editsection-bracket">]</span></span>
           </h2>
           <div class="wiki-section-body">
@@ -700,7 +831,7 @@ function renderCharacterArticle(container, charId) {
         ${char.personality ? `
           <section class="wiki-section" id="sec-personality">
             <h2 class="wiki-section-heading">
-              <span><span class="mw-headline-number">3.</span> Личность и характер</span>
+              <span><span class="mw-headline-number">${personalityNum}.</span> Личность и характер</span>
               <span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="javascript:void(0)" onclick="openArchitectureModal('sections')">архитектура</a><span class="mw-editsection-bracket">]</span></span>
             </h2>
             <div class="wiki-section-body">
@@ -713,7 +844,7 @@ function renderCharacterArticle(container, charId) {
         ${char.relationships && char.relationships.length ? `
           <section class="wiki-section" id="sec-relationships">
             <h2 class="wiki-section-heading">
-              <span><span class="mw-headline-number">${char.personality ? '4.' : '3.'}</span> Связи и отношения</span>
+              <span><span class="mw-headline-number">${relationshipsNum}.</span> Связи и отношения</span>
               <span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="javascript:void(0)" onclick="openArchitectureModal('sections')">архитектура</a><span class="mw-editsection-bracket">]</span></span>
             </h2>
             <div class="relationships-list">
@@ -721,7 +852,7 @@ function renderCharacterArticle(container, charId) {
                 const targetChar = STATE.data.characters.find(c => c.id === rel.charId);
                 const targetFaction = STATE.data.factions.find(f => f.id === rel.charId);
                 const targetName = targetChar ? targetChar.name : (targetFaction ? targetFaction.name : (rel.charName || rel.charId));
-                const targetLink = targetChar ? `#character/${rel.charId}` : (targetFaction ? `#faction/${targetFaction.id}` : (rel.charId === 'gusev-ferangiy' ? '#faction/gusev-empire' : '#characters'));
+                const targetLink = targetChar ? `#character/${rel.charId}` : (targetFaction ? `#faction/${targetFaction.id}` : '#characters');
                 return `
                   <div class="rel-item">
                     <a href="${targetLink}" class="rel-name">${escapeHtml(targetName)}</a>
@@ -737,7 +868,7 @@ function renderCharacterArticle(container, charId) {
         ${char.trivia && char.trivia.length ? `
           <section class="wiki-section" id="sec-trivia">
             <h2 class="wiki-section-heading">
-              <span><span class="mw-headline-number">${char.personality ? (char.relationships && char.relationships.length ? '5.' : '4.') : (char.relationships && char.relationships.length ? '4.' : '3.')}</span> Интересные факты</span>
+              <span><span class="mw-headline-number">${triviaNum}.</span> Интересные факты</span>
               <span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="javascript:void(0)" onclick="openArchitectureModal('sections')">архитектура</a><span class="mw-editsection-bracket">]</span></span>
             </h2>
             <div class="wiki-section-body">
@@ -807,6 +938,7 @@ function renderFactionsDirectory(container) {
       <div class="wiki-counter-badge"><span class="badge-dot">●</span> <strong>${factions.length}</strong> организации в архиве</div>
     </div>
 
+    <h2 class="visually-hidden">Список группировок</h2>
     <div class="cards-grid">
       ${factions.map(faction => renderFactionCardHtml(faction)).join('')}
     </div>
@@ -826,7 +958,7 @@ function renderFactionArticle(container, factionId) {
     return;
   }
 
-  const members = STATE.data.characters.filter(c => c.factionId === faction.id);
+  const members = STATE.data.characters.filter(c => c.factionId === faction.id || (faction.notableMembers && faction.notableMembers.includes(c.id)));
 
   updateBreadcrumbs([
     { title: 'Вики', link: '#home' },
@@ -869,8 +1001,8 @@ function renderFactionArticle(container, factionId) {
         </div>
       </div>
 
-      <div class="article-main-wrapper">
-        <aside class="wiki-infobox">
+      <div class="article-main-wrapper article-body">
+        <aside class="wiki-infobox infobox">
           <div class="infobox-title">${escapeHtml(faction.name)}</div>
           <div class="infobox-image-wrapper">
             <div class="infobox-avatar">${faction.avatar || '🏛️'}</div>
@@ -1092,7 +1224,7 @@ function renderEpisodesPlaceholder(container) {
 
 function renderAvatarHtml(char) {
   if (char.isImage || (char.avatar && (char.avatar.includes('/') || char.avatar.includes('.')))) {
-    return `<img src="${char.avatar}" alt="${escapeHtml(char.name)}">`;
+    return `<img src="${char.avatar}" alt="${escapeHtml(char.name)}" loading="lazy" width="96" height="96">`;
   }
   return char.avatar || '👤';
 }
@@ -1204,6 +1336,42 @@ function initSearch() {
     }
   });
 
+  input.addEventListener('keydown', (e) => {
+    const items = resultsContainer.querySelectorAll('.search-result-item');
+    if (e.key === 'ArrowDown') {
+      if (typeof e.preventDefault === 'function') e.preventDefault();
+      if (items.length > 0) {
+        if (STATE.selectedSearchIndex < items.length - 1) {
+          STATE.selectedSearchIndex++;
+        }
+        updateSelectedResult(items);
+      }
+    } else if (e.key === 'ArrowUp') {
+      if (typeof e.preventDefault === 'function') e.preventDefault();
+      if (items.length > 0) {
+        if (STATE.selectedSearchIndex > 0) {
+          STATE.selectedSearchIndex--;
+        } else {
+          STATE.selectedSearchIndex = 0;
+        }
+        updateSelectedResult(items);
+      }
+    } else if (e.key === 'Enter') {
+      if (typeof e.preventDefault === 'function') e.preventDefault();
+      if (items.length > 0) {
+        const targetIndex = STATE.selectedSearchIndex >= 0 ? STATE.selectedSearchIndex : 0;
+        const targetItem = items[targetIndex];
+        if (targetItem) {
+          const targetLink = targetItem.getAttribute('data-link');
+          if (targetLink) {
+            window.location.hash = targetLink;
+            closeSearch();
+          }
+        }
+      }
+    }
+  });
+
   document.querySelectorAll('.filter-chip').forEach(chip => {
     chip.addEventListener('click', () => {
       document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
@@ -1213,26 +1381,41 @@ function initSearch() {
     });
   });
 
-  input.addEventListener('input', () => {
-    STATE.searchQuery = input.value.trim().toLowerCase();
-    executeSearch();
-  });
+  input.addEventListener('input', debounce(executeSearch, 150));
+
+  function updateSelectedResult(items) {
+    if (!items) items = resultsContainer.querySelectorAll('.search-result-item');
+    items.forEach((item, idx) => {
+      if (idx === STATE.selectedSearchIndex) {
+        item.classList.add('selected');
+        if (typeof item.scrollIntoView === 'function') {
+          item.scrollIntoView({ block: 'nearest' });
+        }
+      } else {
+        item.classList.remove('selected');
+      }
+    });
+  }
 
   function openSearch() {
     modal.classList.remove('hidden');
     input.value = '';
     STATE.searchQuery = '';
+    STATE.selectedSearchIndex = -1;
     executeSearch();
     setTimeout(() => input.focus(), 50);
   }
 
   function closeSearch() {
     modal.classList.add('hidden');
+    STATE.selectedSearchIndex = -1;
   }
 
   function executeSearch() {
     let results = [];
-    const q = STATE.searchQuery;
+    const q = (input ? input.value : STATE.searchQuery || '').trim().toLowerCase();
+    STATE.searchQuery = q;
+    STATE.selectedSearchIndex = -1;
 
     // Поиск персонажей
     if (STATE.searchFilter === 'all' || STATE.searchFilter === 'character') {
@@ -1292,6 +1475,29 @@ function initSearch() {
       }
     }
 
+    if (q) {
+      results.sort((a, b) => {
+        const aTitle = a.title.toLowerCase();
+        const bTitle = b.title.toLowerCase();
+        const aExact = aTitle === q;
+        const bExact = bTitle === q;
+        if (aExact && !bExact) return -1;
+        if (!aExact && bExact) return 1;
+
+        const aStarts = aTitle.startsWith(q);
+        const bStarts = bTitle.startsWith(q);
+        if (aStarts && !bStarts) return -1;
+        if (!aStarts && bStarts) return 1;
+
+        const aIncludes = aTitle.includes(q);
+        const bIncludes = bTitle.includes(q);
+        if (aIncludes && !bIncludes) return -1;
+        if (!aIncludes && bIncludes) return 1;
+
+        return 0;
+      });
+    }
+
     if (results.length === 0) {
       resultsContainer.innerHTML = `
         <div style="padding: 30px; text-align: center; color: var(--text-muted);">
@@ -1302,7 +1508,7 @@ function initSearch() {
     }
 
     resultsContainer.innerHTML = results.map(r => `
-      <div class="search-result-item" onclick="window.location.hash='${r.link}'; document.getElementById('searchModal').classList.add('hidden');">
+      <div class="search-result-item" data-link="${r.link}" onclick="window.location.hash='${r.link}'; document.getElementById('searchModal').classList.add('hidden');">
         <span class="search-res-icon" style="width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; border-radius: 4px; overflow: hidden;">${r.avatarHtml}</span>
         <div class="search-res-content">
           <div class="search-res-title"><a href="${r.link}" style="color:inherit; text-decoration:none;">${escapeHtml(r.title)}</a></div>
@@ -1453,45 +1659,11 @@ function renderWikiProse(text, currentId) {
   if (!text) return '';
   const escaped = escapeHtml(text);
 
-  // Список сущностей отсортирован от наиболее специфичных и длинных к коротким
-  const entities = [
-    { pattern: /Валентин(?:а)?\s+(?:«Белый»\s+)?Белинск(?:ий|ого|ому|им|ом)\s+Агафонович/i, href: '#character/valentin-belinsky', id: 'valentin-belinsky' },
-    { pattern: /Валентин(?:а)?\s+Белинск(?:ий|ого|ому|им|ом)/i, href: '#character/valentin-belinsky', id: 'valentin-belinsky' },
-    { pattern: /Наркоимпери(?:я|и|ю|ей)\s+Хуйзенберга/i, href: '#faction/huizenberg-empire', id: 'huizenberg-empire' },
-    { pattern: /Наркоимпери(?:я|и|ю|ей)\s+Гусева\s+Ферангия/i, href: '#faction/gusev-empire', id: 'gusev-empire' },
-    { pattern: /Хуйзенберг(?:а|у|ом|е)?/i, href: '#character/valentin-belinsky', id: 'valentin-belinsky' },
-    { pattern: /Стояк(?:а)?\s+Геннадьевич(?:а)?\s+Шрейдеров(?:а)?/i, href: '#character/stoyak-belinsky', id: 'stoyak-belinsky' },
-    { pattern: /Стояк(?:а)?\s+Белинск(?:ий|ого|ому|им|ом)/i, href: '#character/stoyak-belinsky', id: 'stoyak-belinsky' },
-    { pattern: /Скулер\s+Белинск(?:ая|ой|ую)/i, href: '#character/skyler-belinskaya', id: 'skyler-belinskaya' },
-    { pattern: /Сосик(?:а)?\s+\(Джимми\)\s+Гудманов(?:а)?/i, href: '#character/sosik-goodman', id: 'sosik-goodman' },
-    { pattern: /Сосик(?:а)?\s+Гудман(?:а|у|ом|е)?/i, href: '#character/sosik-goodman', id: 'sosik-goodman' },
-    { pattern: /Гусев(?:а)?\s+Феранги(?:й|я|ю|ем|е)/i, href: '#faction/gusev-empire', id: 'gusev-empire' },
-    { pattern: /Гей\s+Анальн(?:ый|ого)\s+Химбиович(?:а)?/i, href: '#character/gey-himbiovech', id: 'gey-himbiovech' },
-    { pattern: /Гей(?:я)?\s+Химбиович(?:а|у|ем|е)?/i, href: '#character/gey-himbiovech', id: 'gey-himbiovech' },
-    { pattern: /Гей(?:я)?\s+Химирович(?:а|у|ем|е)?/i, href: '#character/gey-himbiovech', id: 'gey-himbiovech' },
-    { pattern: /Хербиович(?:а|у|ем|е)?/i, href: '#character/gey-himbiovech', id: 'gey-himbiovech' },
-    { pattern: /Жесси\s+рiзiв(?:ым|ого|ому|ый)\s+пiрн(?:ем|я|ю|ь)/i, href: '#character/jesse-pinkman', id: 'jesse-pinkman' },
-    { pattern: /Джесси\s+Розов(?:ый|ого|ому|ым|ом)/i, href: '#character/jesse-pinkman', id: 'jesse-pinkman' },
-    { pattern: /Жесси\s+Розов(?:ый|ого|ому|ым|ом)/i, href: '#character/jesse-pinkman', id: 'jesse-pinkman' },
-    { pattern: /ОБН\s+Подзалупинска/i, href: '#faction/obn-podzalupinsk', id: 'obn-podzalupinsk' },
-    { pattern: /«Пилот\s+Мефедрона»|«Пилот\s+мефедрона»/i, href: '#timeline', id: 'timeline' },
-    { pattern: /«Хуелина»/i, href: '#timeline', id: 'timeline' },
-    { pattern: /«Путь\s+розового\?»/i, href: '#timeline', id: 'timeline' },
-    { pattern: /«Полная\s+и\s+жирная\s+мера»/i, href: '#timeline', id: 'timeline' },
-    { pattern: /«Без\s+яйца»/i, href: '#timeline', id: 'timeline' },
-    { pattern: /«Озимандий\s+по-русски»/i, href: '#timeline', id: 'timeline' },
-    { pattern: /«Звоните\s+Сосику»/i, href: '#timeline', id: 'timeline' },
-    { pattern: /г\.\s+Подзалупинск(?:а|у|ом|е)?|Подзалупинск(?:а|у|ом|е)?/i, href: null, isPlace: true }
-  ];
-
-  // Единый регулярный шаблон с именованным поиском без повторного сканирования
-  const combinedPattern = new RegExp(entities.map(e => `(${e.pattern.source})`).join('|'), 'gi');
-
-  return escaped.replace(combinedPattern, (...matchArgs) => {
+  return escaped.replace(WIKI_PATTERN, (...matchArgs) => {
     const matchedText = matchArgs[0];
-    for (let i = 0; i < entities.length; i++) {
+    for (let i = 0; i < WIKI_ENTITIES.length; i++) {
       if (matchArgs[i + 1] !== undefined) {
-        const entity = entities[i];
+        const entity = WIKI_ENTITIES[i];
         if (entity.isPlace) {
           return `<span class="wiki-place-tag">${matchedText}</span>`;
         }
@@ -1499,7 +1671,7 @@ function renderWikiProse(text, currentId) {
           // Стандарт MediaWiki: самоссылки на текущей странице отображаются полужирным текстом
           return `<strong class="mw-selflink">${matchedText}</strong>`;
         }
-        return `<a href="${entity.href}" class="wiki-inline-link">${matchedText}</a>`;
+        return `<a href="${entity.href}" class="wiki-link wiki-inline-link">${matchedText}</a>`;
       }
     }
     return matchedText;
@@ -1525,7 +1697,7 @@ function initExportReset() {
   document.getElementById('resetDataBtn').addEventListener('click', (e) => {
     e.preventDefault();
     if (confirm("Сбросить все данные к каноничной базе «Во Все Хуёвые»? Все локальные правки будут заменены.")) {
-      localStorage.removeItem('wiki_lore_data');
+      safeStorage.removeItem('wiki_lore_data');
       initData();
       handleRoute();
     }
@@ -1544,14 +1716,4 @@ function escapeHtml(str) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
-}
-
-function slugify(text) {
-  return text
-    .toString()
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g, '-')
-    .replace(/[^\w\u0400-\u04FF\-]+/g, '')
-    .replace(/\-\-+/g, '-');
 }

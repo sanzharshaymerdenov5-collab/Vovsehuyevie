@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://sanzharshaymerdenov5-collab.github.io/Vovsehuyevie/sitemap.xml

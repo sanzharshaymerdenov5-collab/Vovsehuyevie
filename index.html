@@ -5,24 +5,98 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Во Все Хуёвые — Официальная Энциклопедия и База Знаний</title>
   <meta name="description" content="Официальная вики пародийного сериала «Во Все Хуёвые». Биографии Валентина Белинского (Хуйзенберга), Стояка, Джесси Розового, группировки и хронология серий.">
-  <link rel="stylesheet" href="css/style.css">
+  <meta name="keywords" content="Во Все Хуёвые, Хуйзенберг, Валентин Белинский, Джесси Розовый, Стояк, Подзалупинск, вики, энциклопедия, сериал">
+  <meta name="robots" content="index, follow">
+  <meta name="theme-color" content="#0f1117">
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Во Все Хуёвые — Википедия">
+  <meta property="og:title" content="Во Все Хуёвые — Официальная Энциклопедия и База Знаний">
+  <meta property="og:description" content="Официальная вики пародийного сериала «Во Все Хуёвые». Биографии Валентина Белинского, Стояка, Джесси Розового, синдикаты Подзалупинска.">
+  <meta property="og:url" content="https://sanzharshaymerdenov5-collab.github.io/Vovsehuyevie/">
+  <meta property="og:image" content="https://sanzharshaymerdenov5-collab.github.io/Vovsehuyevie/assets/valentin.jpg">
+  <meta property="og:image:width" content="1024">
+  <meta property="og:image:height" content="649">
+  <meta property="og:locale" content="ru_RU">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Во Все Хуёвые — Официальная Энциклопедия и База Знаний">
+  <meta name="twitter:description" content="База знаний пародийного сериала «Во Все Хуёвые». Досье персонажей и группировок Подзалупинска.">
+  <meta name="twitter:image" content="https://sanzharshaymerdenov5-collab.github.io/Vovsehuyevie/assets/valentin.jpg">
+
+  <!-- Canonical & Favicon -->
+  <link rel="canonical" href="https://sanzharshaymerdenov5-collab.github.io/Vovsehuyevie/">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚗️</text></svg>">
+
+  <!-- Resource & Font Preconnects -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700;800&family=Lora:ital,wght@0,500;0,600;0,700;1,400;1,600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600;700&family=Lora:wght@700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+
+  <style>
+    .skip-link {
+      position: absolute;
+      top: -999px;
+      left: 12px;
+      background: #1d4ed8;
+      color: #ffffff;
+      padding: 8px 16px;
+      border-radius: 4px;
+      font-weight: 600;
+      text-decoration: none;
+      z-index: 10000;
+    }
+    .skip-link:focus {
+      top: 12px;
+    }
+    #contentViewport:focus {
+      outline: none;
+    }
+    .visually-hidden {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+    a.logo-area {
+      text-decoration: none;
+      color: inherit;
+    }
+    a.logo-area:hover {
+      text-decoration: none;
+    }
+    button.search-trigger {
+      font-family: inherit;
+      font-size: inherit;
+      text-align: left;
+      color: inherit;
+    }
+  </style>
 </head>
 <body>
+  <!-- Skip Link for Accessibility (WCAG 2.1 AA) -->
+  <a href="#contentViewport" class="skip-link" onclick="event.preventDefault(); var vp=document.getElementById('contentViewport'); if(vp){vp.focus(); vp.scrollIntoView({behavior:'smooth'});}">Перейти к основному содержанию</a>
+
   <!-- Верхняя панель навигации (Classic Fandom Header) -->
   <header class="wiki-header">
     <div class="header-container">
-      <div class="logo-area" id="homeLogoBtn">
+      <a href="#home" class="logo-area" id="homeLogoBtn" aria-label="Во Все Хуёвые — Главная страница">
         <div class="logo-icon">⚗️</div>
         <div class="logo-text">
           <span class="wiki-super" id="wikiUniverseTitle">ВО ВСЕ ХУЁВЫЕ</span>
           <span class="wiki-main" id="wikiMainTitle">Официальная Вики</span>
         </div>
-      </div>
+      </a>
 
-      <nav class="main-nav">
+      <nav class="main-nav" aria-label="Основная навигация">
         <button class="nav-btn active" data-view="home">Главная</button>
         <button class="nav-btn" data-view="characters">Персонажи</button>
         <button class="nav-btn" data-view="factions">Группировки</button>
@@ -32,14 +106,14 @@
 
       <div class="header-actions">
         <!-- Поисковая строка -->
-        <div class="search-trigger" id="openSearchBtn">
+        <button type="button" class="search-trigger" id="openSearchBtn" aria-label="Открыть быстрый поиск">
           <span class="search-icon">🔍</span>
           <span class="search-placeholder">Быстрый поиск...</span>
           <kbd class="kbd-shortcut">/</kbd>
-        </div>
+        </button>
 
         <!-- Переключатель темы -->
-        <button class="theme-toggle-btn" id="themeToggleBtn" title="Сменить тему (Светлая / Тёмная)">
+        <button type="button" class="theme-toggle-btn" id="themeToggleBtn" title="Сменить тему (Светлая / Тёмная)" aria-label="Сменить тему (Светлая / Тёмная)">
           <span id="themeIcon">🌙</span>
         </button>
       </div>
@@ -49,11 +123,11 @@
   <!-- Подпанель: Хлебные крошки и статистика -->
   <div class="sub-banner">
     <div class="sub-banner-container">
-      <div class="wiki-breadcrumbs" id="wikiBreadcrumbs">
+      <nav class="wiki-breadcrumbs" id="wikiBreadcrumbs" aria-label="Хлебные крошки">
         <a href="#home">Вики</a>
         <span class="bc-sep">/</span>
         <span class="bc-current">Главная</span>
-      </div>
+      </nav>
       <div class="wiki-quick-stats" id="quickStats">
         <span class="stat-pill"><strong id="statCharCount">0</strong> Персонажей</span>
         <span class="stat-pill"><strong id="statFactionCount">0</strong> Группировок</span>
@@ -64,18 +138,19 @@
 
   <!-- Основной контент страницы -->
   <main class="wiki-layout" id="mainLayout">
-    <div class="content-viewport" id="contentViewport">
+    <div class="content-viewport" id="contentViewport" tabindex="-1">
       <!-- Динамически заполняется через app.js -->
     </div>
   </main>
 
   <!-- Модальное окно глобального мгновенного поиска -->
-  <div class="modal-overlay hidden" id="searchModal">
+  <div class="modal-overlay hidden" id="searchModal" role="dialog" aria-modal="true" aria-labelledby="searchModalTitle">
     <div class="search-modal-box">
+      <h2 id="searchModalTitle" class="visually-hidden">Поиск по энциклопедии</h2>
       <div class="search-input-wrapper">
         <span class="search-box-icon">🔍</span>
-        <input type="text" id="globalSearchInput" placeholder="Поиск персонажей, псевдонимов, цитат, серий..." autocomplete="off">
-        <button class="modal-close-btn" id="closeSearchBtn">&times;</button>
+        <input type="text" id="globalSearchInput" placeholder="Поиск персонажей, псевдонимов, цитат, серий..." autocomplete="off" aria-label="Поиск по энциклопедии">
+        <button type="button" class="modal-close-btn" id="closeSearchBtn" aria-label="Закрыть поиск">&times;</button>
       </div>
       <div class="search-filters-row">
         <span class="filter-label">Фильтр:</span>
@@ -83,7 +158,7 @@
         <button class="filter-chip" data-filter="character">Персонажи</button>
         <button class="filter-chip" data-filter="faction">Группировки</button>
       </div>
-      <div class="search-results-list" id="searchResultsList">
+      <div class="search-results-list" id="searchResultsList" aria-live="polite">
         <!-- Результаты генерируются динамически -->
       </div>
       <div class="search-footer">
@@ -100,7 +175,7 @@
           <div class="modal-badge">📐 Архитектура вики-статьи</div>
           <h3 id="archModalTitle">Пошаговый план структуры статьи</h3>
         </div>
-        <button class="modal-close-btn" id="closeArchModalBtn" title="Закрыть">&times;</button>
+        <button type="button" class="modal-close-btn" id="closeArchModalBtn" title="Закрыть" aria-label="Закрыть модальное окно">&times;</button>
       </div>
       
       <div class="modal-tabs">
@@ -385,7 +460,7 @@
       <div class="footer-col" id="footerEditingCol">
         <h4>Редактирование</h4>
         <p>Каноничная база знаний защищена от произвольных правок. Для ознакомления со стандартом оформления и структурой страниц используйте спецификацию:</p>
-        <button class="btn btn-secondary btn-arch-footer" id="openArchitectureBtn">
+        <button type="button" class="btn btn-secondary btn-arch-footer" id="openArchitectureBtn">
           <span class="btn-icon">📐</span>
           <span>Архитектура статьи</span>
         </button>
@@ -399,5 +474,21 @@
   <!-- Скрипты приложения -->
   <script src="js/data.js?v=2.5"></script>
   <script src="js/app.js?v=2.5"></script>
+  <!-- Skip link keyboard navigation listener (prevents router hash collision) -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      var skipLink = document.querySelector('.skip-link');
+      if (skipLink) {
+        skipLink.addEventListener('click', function(e) {
+          e.preventDefault();
+          var vp = document.getElementById('contentViewport');
+          if (vp) {
+            vp.focus();
+            vp.scrollIntoView({ behavior: 'smooth' });
+          }
+        });
+      }
+    });
+  </script>
 </body>
 </html>
