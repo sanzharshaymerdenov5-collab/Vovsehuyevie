@@ -350,8 +350,8 @@ const DEFAULT_WIKI_DATA = {
         "Гусь",
         "Глава нарко-империи"
       ],
-      avatar: "🍗",
-      isImage: false,
+      avatar: "assets/gusev.jpg",
+      isImage: true,
       status: "Мёртв",
       role: "Управляющий кафе «Голубой шампур», крупный поставщик стероидов и наркоты, владелец нарко-империи",
       rolesList: [
