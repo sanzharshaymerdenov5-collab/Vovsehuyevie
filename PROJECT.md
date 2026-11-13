@@ -2,10 +2,10 @@
 
 ## Architecture
 - **Type**: Static Pre-Rendered Multi-Page + SPA Hybrid (GitHub Pages compatible, offline `file://` compatible).
-- **Build Generator**: `scripts/build-pages.js` pre-renders 26 static HTML entry points (`index.html`, `characters/`, `factions/`, `episodes/`, `timeline/`, `graph/`, `character/<id>/`, `faction/<id>/`, `episode/<id>/`, `404.html`) plus a hash-free `sitemap.xml` directly from `js/data.js` and `js/app.js`.
+- **Build Generator**: `scripts/build-pages.js` pre-renders 25 static HTML entry points (`index.html`, `characters/`, `factions/`, `episodes/`, `timeline/`, `graph/`, `character/<id>/`, `faction/<id>/`, `episode/<id>/`, `404.html`) plus a hash-free `sitemap.xml` directly from `js/data.js` and `js/app.js`.
 - **Styles**: `css/style.css` (design tokens, dark/light themes verified >= 4.5:1 WCAG 2.1 AA, infoboxes, graph SVG styling, episodes registry, and responsive breakpoints down to 320px).
 - **Logic & State**:
-  - `js/data.js`: Canon dataset (`DEFAULT_WIKI_DATA` v2.6) containing universe metadata, 7 characters, 3 factions, 9 canon episodes/film, and 8 timeline milestones.
+  - `js/data.js`: Canon dataset (`DEFAULT_WIKI_DATA` v2.6) containing universe metadata, 7 characters, 3 factions, 8 canon entries (7 episodes + 1 film), and 8 timeline milestones.
   - `js/app.js`: History API router (`pushState`/`popstate` + legacy `#...` auto-upgrade), directory/article/episode-stub/relationship-graph renderers, full-field debounced quick search with `<mark>` match highlighting & focus trap, random article switcher, section copy buttons, and PWA Service Worker registration.
 
 ## Data Flow
@@ -19,7 +19,7 @@
 |---|---------|----------------|
 | 1 | Safe Storage Wrapper | Resilient `safeStorage` catching `SecurityError` / `QuotaExceededError` with in-memory Map fallback. |
 | 2 | Hash-Free History API Routing + SSR Pre-Render | `scripts/build-pages.js` + `ROUTING` context supporting GitHub Pages `/Vovsehuyevie/`, root `/`, and local `file://`. |
-| 3 | Episodes Directory + Stub Pages | Working `/episodes/` catalog listing 9 canon entries routing to clean «Страница в разработке» stubs. |
+| 3 | Episodes Directory + Stub Pages | Working `/episodes/` catalog listing 8 canon entries (7 episodes + 1 film) routing to clean «Страница в разработке» stubs. |
 | 4 | Interactive Relationship Graph | `/graph/` SVG network connecting canon characters, faction filters, keyboard support, and detail inspector. |
 | 5 | Unified Faction Resolution & Status Semantics | `getFactionMembers()` consistency across cards/filters/articles; accurate `infobox-status-text-*` styling and `.mw-redlink` buttons for undocumented mentions. |
 | 6 | Accessible Search Modal & Highlights | ARIA `combobox`/`listbox`/`activedescendant`, `Tab` focus trap, focus restoration, `Episodes` filter chip, `<mark>` match highlight. |
@@ -40,13 +40,13 @@ Vovsehuyevie/
 ├── scripts/build-pages.js      # Static HTML pre-renderer & clean sitemap.xml generator
 ├── character/<id>/index.html   # Pre-rendered character dossier pages (7)
 ├── faction/<id>/index.html     # Pre-rendered faction pages (3)
-├── episode/<id>/index.html     # Pre-rendered episode/film stub pages (9)
+├── episode/<id>/index.html     # Pre-rendered episode/film stub pages (8: 7 episodes + 1 film)
 ├── characters|factions|episodes|timeline|graph/index.html
 ├── index.html                  # Home portal page
 ├── 404.html                    # Custom 404 recovery page for GitHub Pages
 ├── manifest.webmanifest        # PWA app manifest
 ├── sw.js                       # Offline caching Service Worker
 ├── robots.txt                  # Search crawling policy
-├── sitemap.xml                 # Clean `#`-free sitemap (25 URLs)
+├── sitemap.xml                 # Clean `#`-free sitemap (24 URLs)
 └── tests/                      # Test harness & Tier 1-4 suites
 ```

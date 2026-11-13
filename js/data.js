@@ -462,8 +462,8 @@ const DEFAULT_WIKI_DATA = {
       status: "В разработке"
     },
     {
-      id: "zvonite-sosiku",
-      title: "Звоните Сосику",
+      id: "popandos-huendos",
+      title: "Попандос Хуендос",
       kind: "Серия",
       status: "В разработке"
     },
@@ -488,12 +488,6 @@ const DEFAULT_WIKI_DATA = {
     {
       id: "skazhi-moi-siski",
       title: "Скажи мои сиськи",
-      kind: "Серия",
-      status: "В разработке"
-    },
-    {
-      id: "ozimandiy-po-russki",
-      title: "Озимандий по-русски",
       kind: "Серия",
       status: "В разработке"
     },

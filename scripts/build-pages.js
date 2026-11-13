@@ -524,6 +524,25 @@ ${urlBlocks}
 `;
 }
 
+function findOrphanEntityDirs(data) {
+  const expectedByRoot = {
+    character: new Set((data.characters || []).map(c => c.id)),
+    faction: new Set((data.factions || []).map(f => f.id)),
+    episode: new Set((data.episodes || []).map(e => e.id))
+  };
+  const orphans = [];
+  for (const [dirName, validIds] of Object.entries(expectedByRoot)) {
+    const parentDir = path.join(ROOT_DIR, dirName);
+    if (!fs.existsSync(parentDir)) continue;
+    for (const entry of fs.readdirSync(parentDir, { withFileTypes: true })) {
+      if (entry.isDirectory() && !validIds.has(entry.name)) {
+        orphans.push(`${dirName}/${entry.name}`);
+      }
+    }
+  }
+  return orphans;
+}
+
 function main() {
   const isCheckOnly = process.argv.includes('--check');
   const data = loadCanonData();
@@ -544,8 +563,10 @@ function main() {
     content: buildSitemapXml(specs)
   });
 
+  const orphanDirs = findOrphanEntityDirs(data);
+
   if (isCheckOnly) {
-    const stale = [];
+    const stale = [...orphanDirs.map(d => `${d}/ (orphaned)`)];
     for (const file of outputs) {
       const absPath = path.join(ROOT_DIR, file.relPath);
       if (!fs.existsSync(absPath) || fs.readFileSync(absPath, 'utf8') !== file.content) {
@@ -558,6 +579,11 @@ function main() {
     }
     console.log(`Build check passed: all ${outputs.length} pre-rendered files and sitemap.xml are up to date.`);
     return;
+  }
+
+  for (const orphanRel of orphanDirs) {
+    fs.rmSync(path.join(ROOT_DIR, orphanRel), { recursive: true, force: true });
+    console.log(`Removed orphaned directory: ${orphanRel}/`);
   }
 
   for (const file of outputs) {

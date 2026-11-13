@@ -220,7 +220,7 @@ async function runTier4Tests(reporter) {
   }
   reporter.endTest();
 
-  reporter.startTest('Step 4: Reader taps "Серии" link, sees 9 episodes, and opens stub placeholder');
+  reporter.startTest('Step 4: Reader taps "Серии" link, sees 7 series + 1 film (8 entries), and opens stub placeholder');
   try {
     const env = createBrowserEnvironment();
     const episodesBtn = env.document.querySelector('.nav-btn[data-view="episodes"]');
@@ -228,7 +228,7 @@ async function runTier4Tests(reporter) {
     episodesBtn.click();
     assert.equal(env.window.location.pathname, '/Vovsehuyevie/episodes/', 'Pathname should change to /Vovsehuyevie/episodes/');
     const epCards = env.document.querySelectorAll('#contentViewport .episode-card');
-    assert.equal(epCards.length, 9, 'Episodes directory must list all 9 canon episodes/film');
+    assert.equal(epCards.length, 8, 'Episodes directory must list all 8 canon entries (7 series + 1 film)');
     epCards[0].click();
     assert.includes(env.window.location.pathname, '/episode/', 'Clicking episode card navigates to /episode/ stub');
     assert.includes(env.document.getElementById('contentViewport').textContent, 'в разработке', 'Individual episode page should render as placeholder stub');

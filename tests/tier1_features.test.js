@@ -405,8 +405,9 @@ async function runTier1Tests(reporter) {
   reporter.startTest('renderWikiProse auto-links episode names without #');
   try {
     const env = createBrowserEnvironment();
-    const html = env.eval("renderWikiProse('Впервые это произошло в серии «Звоните Сосику».')");
-    assert.includes(html, 'episode/zvonite-sosiku/', 'Should create hash-free link to zvonite-sosiku episode');
+    const html = env.eval("renderWikiProse('Во второй серии «Попандос Хуендос» происходят события, не связанные с «Озимандий по-русски».')");
+    assert.includes(html, 'episode/popandos-huendos/', 'Should create hash-free link to popandos-huendos episode');
+    assert.notIncludes(html, 'ozimandiy-po-russki', 'Removed episode Озимандий по-русски must not be linked');
     assert.notIncludes(html, '#', 'Auto-linked episode URL must not contain #');
   } catch (e) {
     if (e.name !== 'AssertionError') throw e;
@@ -571,7 +572,11 @@ async function runTier1Tests(reporter) {
     env.navigate('episodes');
     assert.includes(env.document.title, 'Серии', 'Title should indicate Серии view');
     const epCards = env.document.querySelectorAll('#contentViewport .episode-card');
-    assert.equal(epCards.length, 9, 'Episodes directory must list all 9 canon entries');
+    assert.equal(epCards.length, 8, 'Episodes directory must list all 8 canon entries (7 series + 1 film)');
+    const epListText = env.document.getElementById('contentViewport').textContent;
+    assert.includes(epListText, 'Попандос Хуендос', '2nd episode must be Попандос Хуендос');
+    assert.notIncludes(epListText, 'Звоните Сосику', 'Old 2nd episode title Звоните Сосику must not be listed');
+    assert.notIncludes(epListText, 'Озимандий по-русски', 'Removed episode Озимандий по-русски must not be listed');
     env.navigate('episode/pilot-mefedrona');
     const stubText = env.document.getElementById('contentViewport').textContent;
     assert.includes(stubText, 'в разработке', 'Individual episode page must remain a clean placeholder stub');
@@ -1217,18 +1222,24 @@ async function runTier1Tests(reporter) {
   }
   reporter.endTest();
 
-  reporter.startTest('sitemap.xml has >= 25 hash-free URLs and static pre-rendered pages exist');
+  reporter.startTest('sitemap.xml has >= 24 hash-free URLs and static pre-rendered pages exist');
   try {
     assert.ok(fileExists('sitemap.xml'), 'sitemap.xml must exist at project root');
     const content = getFileContent('sitemap.xml');
     assert.includes(content, '<urlset', 'sitemap.xml must define <urlset>');
     const locMatches = content.match(/<loc>/g) || [];
-    assert.gte(locMatches.length, 25, `sitemap.xml should include at least 25 pre-rendered URLs (found ${locMatches.length})`);
+    assert.gte(locMatches.length, 24, `sitemap.xml should include at least 24 pre-rendered URLs (found ${locMatches.length})`);
     assert.notIncludes(content, '#', 'sitemap.xml must contain ZERO # fragments');
+    assert.includes(content, '/episode/popandos-huendos/', 'sitemap.xml must include renamed 2nd episode popandos-huendos');
+    assert.notIncludes(content, 'zvonite-sosiku', 'sitemap.xml must not include old zvonite-sosiku URL');
+    assert.notIncludes(content, 'ozimandiy-po-russki', 'sitemap.xml must not include deleted ozimandiy-po-russki URL');
 
     assert.ok(fileExists('404.html'), '404.html must exist');
     assert.includes(getFileContent('404.html'), 'noindex, follow', '404.html must have noindex, follow robots meta');
     assert.ok(fileExists('episodes/index.html'), 'Pre-rendered episodes/index.html must exist');
+    assert.ok(fileExists('episode/popandos-huendos/index.html'), 'Pre-rendered Popandos Huendos episode stub must exist');
+    assert.equal(fileExists('episode/zvonite-sosiku/index.html'), false, 'Old zvonite-sosiku page must be removed');
+    assert.equal(fileExists('episode/ozimandiy-po-russki/index.html'), false, 'Deleted ozimandiy-po-russki page must be removed');
     assert.ok(fileExists('graph/index.html'), 'Pre-rendered graph/index.html must exist');
     assert.ok(fileExists('character/valentin-belinsky/index.html'), 'Pre-rendered character page must exist');
   } catch (e) {
