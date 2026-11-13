@@ -150,18 +150,18 @@ async function runTier2Tests(reporter) {
   // -------------------------------------------------------------------------
   reporter.startSuite('Tier 2: Router & URL Hash Boundaries', 'Malformed hashes, non-existent entity IDs, deep paths');
 
-  reporter.startTest('Empty hash defaults to home view');
+  reporter.startTest('Empty route resolves to home view');
   try {
     const env = createBrowserEnvironment();
     env.navigate('');
     const state = env.getState();
-    assert.equal(state.currentView, 'home', 'Empty hash should resolve to home view');
+    assert.equal(state.currentView, 'home', 'Empty route should resolve to home view');
   } catch (e) {
     if (e.name !== 'AssertionError') throw e;
   }
   reporter.endTest();
 
-  reporter.startTest('Bare hash "#" defaults to home view');
+  reporter.startTest('Bare legacy hash "#" defaults cleanly to home view');
   try {
     const env = createBrowserEnvironment();
     env.navigate('#');
@@ -183,24 +183,26 @@ async function runTier2Tests(reporter) {
   }
   reporter.endTest();
 
-  reporter.startTest('Unknown route displays fallback without crashing');
+  reporter.startTest('Unknown route displays 404 fallback without crashing');
   try {
     const env = createBrowserEnvironment();
     assert.doesNotThrow(() => {
-      env.navigate('#unknown-future-route-404');
+      env.navigate('unknown-future-route-404');
     }, 'Unknown route must not throw exception');
     const viewport = env.document.getElementById('contentViewport');
-    assert.gte(viewport.children.length, 1, 'Viewport should render home or error fallback');
+    assert.gte(viewport.children.length, 1, 'Viewport should render 404 fallback');
+    assert.includes(viewport.textContent, '404', 'Should show 404 message on unknown route');
   } catch (e) {
     if (e.name !== 'AssertionError') throw e;
   }
   reporter.endTest();
 
-  reporter.startTest('Route #character without ID redirects to #characters');
+  reporter.startTest('Route character without ID redirects cleanly to /characters/ without #');
   try {
     const env = createBrowserEnvironment();
-    env.navigate('#character');
-    assert.equal(env.window.location.hash, '#characters', 'Missing character ID should redirect to #characters');
+    env.navigate('character');
+    assert.equal(env.window.location.pathname, '/Vovsehuyevie/characters/', 'Missing character ID should redirect to /Vovsehuyevie/characters/');
+    assert.equal(env.window.location.hash, '', 'Redirect URL must not contain #');
   } catch (e) {
     if (e.name !== 'AssertionError') throw e;
   }
@@ -209,7 +211,7 @@ async function runTier2Tests(reporter) {
   reporter.startTest('Non-existent character ID displays error notice gracefully');
   try {
     const env = createBrowserEnvironment();
-    env.navigate('#character/non-existent-person-id-999');
+    env.navigate('character/non-existent-person-id-999');
     const viewport = env.document.getElementById('contentViewport');
     const text = viewport.textContent;
     assert.includes(text, 'не найден', 'Should inform user character is not found');
@@ -218,11 +220,12 @@ async function runTier2Tests(reporter) {
   }
   reporter.endTest();
 
-  reporter.startTest('Route #faction without ID redirects to #factions');
+  reporter.startTest('Route faction without ID redirects cleanly to /factions/ without #');
   try {
     const env = createBrowserEnvironment();
-    env.navigate('#faction');
-    assert.equal(env.window.location.hash, '#factions', 'Missing faction ID should redirect to #factions');
+    env.navigate('faction');
+    assert.equal(env.window.location.pathname, '/Vovsehuyevie/factions/', 'Missing faction ID should redirect to /Vovsehuyevie/factions/');
+    assert.equal(env.window.location.hash, '', 'Redirect URL must not contain #');
   } catch (e) {
     if (e.name !== 'AssertionError') throw e;
   }
@@ -231,7 +234,7 @@ async function runTier2Tests(reporter) {
   reporter.startTest('Non-existent faction ID displays error notice gracefully');
   try {
     const env = createBrowserEnvironment();
-    env.navigate('#faction/non-existent-faction-id-999');
+    env.navigate('faction/non-existent-faction-id-999');
     const viewport = env.document.getElementById('contentViewport');
     const text = viewport.textContent;
     assert.includes(text, 'не найдена', 'Should inform user faction is not found');
@@ -240,23 +243,36 @@ async function runTier2Tests(reporter) {
   }
   reporter.endTest();
 
-  reporter.startTest('Malformed query parameters in hash are parsed cleanly');
+  reporter.startTest('Route episode without ID redirects cleanly to /episodes/ and invalid episode ID shows notice');
+  try {
+    const env = createBrowserEnvironment();
+    env.navigate('episode');
+    assert.equal(env.window.location.pathname, '/Vovsehuyevie/episodes/', 'Missing episode ID should redirect to /Vovsehuyevie/episodes/');
+    env.navigate('episode/non-existent-ep-999');
+    assert.includes(env.document.getElementById('contentViewport').textContent, 'не найден', 'Should handle invalid episode ID gracefully');
+  } catch (e) {
+    if (e.name !== 'AssertionError') throw e;
+  }
+  reporter.endTest();
+
+  reporter.startTest('Malformed query parameters in URL are parsed cleanly');
   try {
     const env = createBrowserEnvironment();
     assert.doesNotThrow(() => {
-      env.navigate('#characters?filter=all&page=1&invalid=%E0%A4%A');
+      env.navigate('characters?filter=all&page=1&invalid=%E0%A4%A');
     }, 'Malformed query parameters in URL must not throw unhandled URIError');
   } catch (e) {
     if (e.name !== 'AssertionError') throw e;
   }
   reporter.endTest();
 
-  reporter.startTest('Deep nested route path "#characters/a/b/c/d/e" does not throw');
+  reporter.startTest('Deep nested route path "characters/a/b/c/d/e" renders 404 without throwing');
   try {
     const env = createBrowserEnvironment();
     assert.doesNotThrow(() => {
-      env.navigate('#characters/a/b/c/d/e');
+      env.navigate('characters/a/b/c/d/e');
     }, 'Deep multi-part route paths must be tolerated');
+    assert.includes(env.document.getElementById('contentViewport').textContent, '404', 'Too-deep route should render 404');
   } catch (e) {
     if (e.name !== 'AssertionError') throw e;
   }
@@ -272,7 +288,7 @@ async function runTier2Tests(reporter) {
   reporter.startTest('Character missing fullName renders infobox without "undefined"');
   try {
     const env = createBrowserEnvironment();
-    env.navigate('#character/stoyak-belinsky');
+    env.navigate('character/stoyak-belinsky');
     const infoboxText = env.document.querySelector('.infobox') ? env.document.querySelector('.infobox').textContent : '';
     assert.notIncludes(infoboxText, 'undefined', 'Infobox text must never display "undefined"');
   } catch (e) {
@@ -283,7 +299,7 @@ async function runTier2Tests(reporter) {
   reporter.startTest('Character missing personality renders article body smoothly');
   try {
     const env = createBrowserEnvironment();
-    env.navigate('#character/stoyak-belinsky');
+    env.navigate('character/stoyak-belinsky');
     const viewport = env.document.getElementById('contentViewport');
     assert.ok(viewport.textContent.length > 100, 'Article content should be rendered');
   } catch (e) {
@@ -294,25 +310,24 @@ async function runTier2Tests(reporter) {
   reporter.startTest('Character missing relationships omits section cleanly without broken markup');
   try {
     const env = createBrowserEnvironment();
-    // In DEFAULT_WIKI_DATA, check if any character lacks relationships or test synthetic character
-    const html = env.eval("renderCharacterArticle(document.getElementById('contentViewport'), 'stoyak-belinsky')");
+    env.eval("renderCharacterArticle(document.getElementById('contentViewport'), 'stoyak-belinsky')");
     assert.notIncludes(env.document.getElementById('contentViewport').innerHTML, 'null', 'Markup must not contain literal "null"');
   } catch (e) {
     if (e.name !== 'AssertionError') throw e;
   }
   reporter.endTest();
 
-  reporter.startTest('Character missing trivia field omits trivia section without breaking TOC');
+  reporter.startTest('Every character article renders without "undefined" or "null"');
   try {
     const env = createBrowserEnvironment();
     const state = env.getState();
     const chars = state.data.characters;
-    assert.gte(chars.length, 1, 'At least one character must exist');
-    // Navigate to each character and verify no undefined in rendered output
+    assert.equal(chars.length, 7, 'Canon registry should contain 7 characters (no unapproved characters added)');
     for (const char of chars) {
-      env.navigate(`#character/${char.id}`);
+      env.navigate(`character/${char.id}`);
       const body = env.document.getElementById('contentViewport').textContent;
       assert.notIncludes(body, 'undefined', `Character article for ${char.id} must not contain undefined`);
+      assert.notIncludes(body, 'null', `Character article for ${char.id} must not contain null`);
     }
   } catch (e) {
     if (e.name !== 'AssertionError') throw e;
@@ -324,7 +339,7 @@ async function runTier2Tests(reporter) {
     const env = createBrowserEnvironment();
     const state = env.getState();
     for (const faction of state.data.factions) {
-      env.navigate(`#faction/${faction.id}`);
+      env.navigate(`faction/${faction.id}`);
       const body = env.document.getElementById('contentViewport').textContent;
       assert.notIncludes(body, 'undefined', `Faction article for ${faction.id} must not contain undefined`);
     }
@@ -401,6 +416,8 @@ async function runTier2Tests(reporter) {
   } catch (e) {
     if (e.name !== 'AssertionError') throw e;
   }
+  reporter.endTest();
+
   reporter.startTest('Unexpected boolean literal in storage recovers to canon data');
   try {
     const env = createBrowserEnvironment({ loadApp: false });
@@ -447,8 +464,9 @@ async function runTier2Tests(reporter) {
     const env = createBrowserEnvironment();
     env.storage.clear();
     assert.doesNotThrow(() => {
-      env.navigate('#episodes');
-      env.navigate('#timeline');
+      env.navigate('episodes');
+      env.navigate('timeline');
+      env.navigate('graph');
     }, 'Clearing storage mid-session must not break SPA navigation');
   } catch (e) {
     if (e.name !== 'AssertionError') throw e;

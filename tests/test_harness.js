@@ -392,6 +392,12 @@ class DOMElement extends DOMNode {
   }
 
   get value() {
+    if (this.tagName === 'SELECT') {
+      if (this._value !== '') return this._value;
+      const options = this.querySelectorAll('option');
+      const selectedOpt = options.find(o => o.hasAttribute('selected')) || options[0];
+      return selectedOpt ? (selectedOpt.getAttribute('value') !== null ? selectedOpt.getAttribute('value') : selectedOpt.textContent) : '';
+    }
     return this._value;
   }
 
@@ -445,32 +451,47 @@ class DOMElement extends DOMNode {
   }
 
   dispatchEvent(event) {
-    event.target = this;
-    event.currentTarget = this;
+    if (!event.target) event.target = this;
+    if (typeof event.stopPropagation !== 'function') {
+      event.stopPropagation = () => { event.propagationStopped = true; };
+    }
+    if (typeof event.preventDefault !== 'function') {
+      event.preventDefault = () => { event.defaultPrevented = true; };
+    }
     const key = event.type.toLowerCase();
-    const listeners = this.eventListeners.get(key) || [];
-    for (const listener of listeners) {
-      try {
-        listener.call(this, event);
-      } catch (e) {
-        if (process.env.DEBUG_TESTS) {
-          console.error(`Error in event listener for ${event.type}:`, e);
-        }
-      }
-    }
-    // Handle inline onclick attribute if present
-    if (event.type === 'click') {
-      const onclickAttr = this.getAttribute('onclick');
-      if (onclickAttr && this.ownerDocument && this.ownerDocument.defaultView) {
+    let current = this;
+
+    while (current) {
+      current.ownerDocument;
+      event.currentTarget = current;
+      const listeners = current.eventListeners ? (current.eventListeners.get(key) || []).slice() : [];
+      for (const listener of listeners) {
         try {
-          const win = this.ownerDocument.defaultView;
-          const fn = new Function('window', 'document', 'location', 'event', onclickAttr);
-          fn.call(this, win, this.ownerDocument, win.location, event);
+          listener.call(current, event);
         } catch (e) {
-          // Expected in test cases testing error states
+          if (process.env.DEBUG_TESTS) {
+            console.error(`Error in event listener for ${event.type}:`, e);
+          }
         }
       }
+
+      if (key === 'click' && typeof current.getAttribute === 'function') {
+        const onclickAttr = current.getAttribute('onclick');
+        if (onclickAttr && current.ownerDocument && current.ownerDocument.defaultView) {
+          try {
+            const win = current.ownerDocument.defaultView;
+            const fn = new Function('window', 'document', 'location', 'event', onclickAttr);
+            fn.call(current, win, current.ownerDocument, win.location, event);
+          } catch (e) {
+            // Expected in test cases testing error states
+          }
+        }
+      }
+
+      if (!event.bubbles || event.propagationStopped || event.cancelBubble) break;
+      current = current.parentNode;
     }
+
     return !event.defaultPrevented;
   }
 
@@ -482,16 +503,38 @@ class DOMElement extends DOMNode {
       bubbles: true,
       cancelable: true,
       defaultPrevented: false,
+      propagationStopped: false,
+      stopPropagation() { this.propagationStopped = true; },
       preventDefault() { this.defaultPrevented = true; }
     };
     this.dispatchEvent(event);
-    // If element is link with href, handle default hash navigation
+    // If element is link with href and wasn't prevented, simulate fallback navigation
     if (this.tagName === 'A' && this.hasAttribute('href') && !event.defaultPrevented) {
       const href = this.getAttribute('href');
-      if (href && href.startsWith('#') && this.ownerDocument && this.ownerDocument.defaultView) {
-        this.ownerDocument.defaultView.location.hash = href;
+      if (href && this.ownerDocument && this.ownerDocument.defaultView) {
+        const win = this.ownerDocument.defaultView;
+        if (href.startsWith('#')) {
+          win.location.hash = href;
+        } else if (typeof win.navigateTo === 'function') {
+          win.navigateTo(href);
+        }
       }
     }
+  }
+
+  matches(selector) {
+    return selector.split(',').some(part => matchesSelector(this, part.trim()));
+  }
+
+  closest(selector) {
+    let el = this;
+    while (el && el.nodeType === 1) {
+      if (el.tagName !== '#DOCUMENT' && el.matches(selector)) {
+        return el;
+      }
+      el = el.parentNode;
+    }
+    return null;
   }
 
   focus() {
@@ -865,14 +908,17 @@ class MockLocalStorage {
 function createBrowserEnvironment(options = {}) {
   const {
     storageMode = 'normal', // 'normal', 'restricted', 'quota_exceeded'
-    initialHash = '#home',
+    initialHash = '',
+    initialPath = '/Vovsehuyevie/',
+    protocol = 'https:',
     htmlFile = path.join(PROJECT_ROOT, 'index.html'),
+    htmlContent: providedHtml = null,
     dataFile = path.join(PROJECT_ROOT, 'js', 'data.js'),
     appFile = path.join(PROJECT_ROOT, 'js', 'app.js'),
     loadApp = true
   } = options;
 
-  const htmlContent = fs.readFileSync(htmlFile, 'utf8');
+  const htmlContent = providedHtml !== null ? providedHtml : fs.readFileSync(htmlFile, 'utf8');
   const document = new DOMDocument();
   parseHTMLToDOM(htmlContent, document);
 
@@ -882,32 +928,90 @@ function createBrowserEnvironment(options = {}) {
 
   const windowListeners = new Map();
   const storage = new MockLocalStorage(storageMode);
+  const origin = protocol === 'file:' ? 'null' : 'https://sanzharshaymerdenov5-collab.github.io';
+
+  const normalizedInitPath = initialPath.startsWith('/') ? initialPath : `/${initialPath}`;
+  const [initPathname, initSearchPart = ''] = normalizedInitPath.split('?');
+  const initSearch = initSearchPart ? `?${initSearchPart}` : '';
+
+  const locationObj = {
+    protocol,
+    origin,
+    host: protocol === 'file:' ? '' : 'sanzharshaymerdenov5-collab.github.io',
+    pathname: initPathname,
+    search: initSearch,
+    _hash: initialHash,
+    get hash() {
+      return this._hash;
+    },
+    set hash(val) {
+      const oldVal = this._hash;
+      const oldHref = this.href;
+      this._hash = val ? (String(val).startsWith('#') ? String(val) : `#${val}`) : '';
+      if (this._hash !== oldVal) {
+        window.dispatchEvent({
+          type: 'hashchange',
+          oldURL: oldHref,
+          newURL: this.href
+        });
+      }
+    },
+    get href() {
+      if (this.protocol === 'file:') {
+        return `file://${this.pathname}${this.search}${this._hash}`;
+      }
+      return `${this.origin}${this.pathname}${this.search}${this._hash}`;
+    }
+  };
+
+  const historyStack = [{ state: null, url: locationObj.href }];
+  let historyIndex = 0;
 
   const window = {
     document,
     localStorage: storage,
-    location: {
-      _hash: initialHash,
-      get hash() {
-        return this._hash;
-      },
-      set hash(val) {
-        const oldVal = this._hash;
-        this._hash = val.startsWith('#') ? val : `#${val}`;
-        if (this._hash !== oldVal) {
-          window.dispatchEvent({
-            type: 'hashchange',
-            oldURL: `https://example.com/${oldVal}`,
-            newURL: `https://example.com/${this._hash}`
-          });
-        }
-      },
-      href: `https://sanzharshaymerdenov5-collab.github.io/Vovsehuyevie/${initialHash}`,
-      search: ''
+    location: locationObj,
+    scrollX: 0,
+    scrollY: 0,
+    navigator: {
+      clipboard: {
+        writeText: () => Promise.resolve()
+      }
     },
-    scrollTo(options) {
-      window.scrollX = options && options.left !== undefined ? options.left : 0;
-      window.scrollY = options && options.top !== undefined ? options.top : 0;
+    matchMedia: () => ({ matches: false, addListener() {}, removeListener() {} }),
+    history: {
+      get length() {
+        return historyStack.length;
+      },
+      get state() {
+        return historyStack[historyIndex] ? historyStack[historyIndex].state : null;
+      },
+      pushState(state, _title, url) {
+        if (url !== undefined && url !== null) {
+          const baseHref = locationObj.protocol === 'file:' ? 'https://example.com/' : locationObj.href;
+          const resolved = new URL(String(url), baseHref);
+          locationObj.pathname = resolved.pathname;
+          locationObj.search = resolved.search;
+          locationObj._hash = resolved.hash || '';
+        }
+        historyStack.splice(historyIndex + 1);
+        historyStack.push({ state: state || null, url: locationObj.href });
+        historyIndex = historyStack.length - 1;
+      },
+      replaceState(state, _title, url) {
+        if (url !== undefined && url !== null) {
+          const baseHref = locationObj.protocol === 'file:' ? 'https://example.com/' : locationObj.href;
+          const resolved = new URL(String(url), baseHref);
+          locationObj.pathname = resolved.pathname;
+          locationObj.search = resolved.search;
+          locationObj._hash = resolved.hash || '';
+        }
+        historyStack[historyIndex] = { state: state || null, url: locationObj.href };
+      }
+    },
+    scrollTo(opts) {
+      window.scrollX = opts && opts.left !== undefined ? opts.left : 0;
+      window.scrollY = opts && opts.top !== undefined ? opts.top : 0;
     },
     addEventListener(type, listener) {
       const key = type.toLowerCase();
@@ -941,6 +1045,7 @@ function createBrowserEnvironment(options = {}) {
     setInterval,
     clearInterval,
     console,
+    URL,
     URLSearchParams,
     JSON,
     Date,
@@ -959,16 +1064,23 @@ function createBrowserEnvironment(options = {}) {
     document,
     localStorage: storage,
     location: window.location,
+    history: window.history,
+    navigator: window.navigator,
     console,
     setTimeout,
     clearTimeout,
     setInterval,
     clearInterval,
+    URL,
     URLSearchParams,
     JSON,
     Date,
     RegExp,
-    Math
+    Math,
+    parseInt,
+    parseFloat,
+    isNaN,
+    isFinite
   };
 
   vm.createContext(sandbox);
@@ -1051,8 +1163,16 @@ function createBrowserEnvironment(options = {}) {
       return el;
     },
 
-    navigate(hash) {
-      window.location.hash = hash;
+    navigate(target) {
+      const raw = String(target === undefined || target === null ? '' : target);
+      if (raw.startsWith('#')) {
+        window.location.hash = raw;
+      } else if (typeof window.navigateTo === 'function') {
+        window.navigateTo(raw);
+      } else {
+        window.history.pushState({}, '', raw);
+        window.dispatchEvent({ type: 'popstate', state: {} });
+      }
     }
   };
 

@@ -23,25 +23,26 @@ async function runTier4Tests(reporter) {
   // -------------------------------------------------------------------------
   reporter.startSuite('Tier 4 Scenario 1: Full Reader Journey', 'Comprehensive browsing flow across articles and wiki prose');
 
-  reporter.startTest('Step 1: Reader arrives at home portal and views universe overview');
+  reporter.startTest('Step 1: Reader arrives at home portal and views universe overview without newsBanner');
   try {
-    const env = createBrowserEnvironment({ initialHash: '#home' });
+    const env = createBrowserEnvironment({ initialPath: '/Vovsehuyevie/' });
     const viewport = env.document.getElementById('contentViewport');
     assert.ok(viewport.querySelector('.portal-hero'), 'Portal hero must be displayed');
     assert.includes(viewport.querySelector('.portal-title').textContent, 'Во Все Хуёвые', 'Universe title must be displayed');
+    assert.notIncludes(viewport.textContent, 'уже доступен в архивах! Проверьте хронологию событий', 'newsBanner must NOT be rendered');
   } catch (e) {
     if (e.name !== 'AssertionError') throw e;
   }
   reporter.endTest();
 
-  reporter.startTest('Step 2: Reader clicks featured hero card to navigate to character article');
+  reporter.startTest('Step 2: Reader clicks featured hero card to navigate to character article without #');
   try {
-    const env = createBrowserEnvironment({ initialHash: '#home' });
+    const env = createBrowserEnvironment({ initialPath: '/Vovsehuyevie/' });
     const heroCard = env.document.querySelector('.wiki-card');
     assert.ok(heroCard, 'Hero card must exist on home view');
-    // Click hero card (or link inside)
     heroCard.click();
-    assert.includes(env.window.location.hash, '#character/', 'Clicking hero card should navigate to character article');
+    assert.includes(env.window.location.pathname, '/character/', 'Clicking hero card should navigate to character article pathname');
+    assert.equal(env.window.location.hash, '', 'URL should not contain #');
   } catch (e) {
     if (e.name !== 'AssertionError') throw e;
   }
@@ -49,7 +50,7 @@ async function runTier4Tests(reporter) {
 
   reporter.startTest('Step 3: Character article renders complete biography and TOC');
   try {
-    const env = createBrowserEnvironment({ initialHash: '#character/valentin-belinsky' });
+    const env = createBrowserEnvironment({ initialPath: '/Vovsehuyevie/character/valentin-belinsky/' });
     const viewport = env.document.getElementById('contentViewport');
     assert.ok(viewport.querySelector('.article-header'), 'Article header must exist');
     assert.ok(viewport.querySelector('.infobox'), 'Infobox must be rendered');
@@ -59,9 +60,9 @@ async function runTier4Tests(reporter) {
   }
   reporter.endTest();
 
-  reporter.startTest('Step 4: Reader clicks TOC anchor link to jump to biography section');
+  reporter.startTest('Step 4: Reader jumps to biography section smoothly');
   try {
-    const env = createBrowserEnvironment({ initialHash: '#character/valentin-belinsky' });
+    const env = createBrowserEnvironment({ initialPath: '/Vovsehuyevie/character/valentin-belinsky/' });
     env.navigate('#sec-biography');
     const viewport = env.document.getElementById('contentViewport');
     assert.ok(viewport.querySelector('#sec-biography'), 'Target biography section must exist in DOM');
@@ -70,15 +71,15 @@ async function runTier4Tests(reporter) {
   }
   reporter.endTest();
 
-  reporter.startTest('Step 5: Reader clicks auto-linked faction in prose to view faction article');
+  reporter.startTest('Step 5: Reader navigates to auto-linked faction article without #');
   try {
-    const env = createBrowserEnvironment({ initialHash: '#character/valentin-belinsky' });
+    const env = createBrowserEnvironment({ initialPath: '/Vovsehuyevie/character/valentin-belinsky/' });
     const prose = env.document.querySelector('.article-body');
     assert.ok(prose, 'Article body must exist');
-    // Navigate to faction mentioned in article
-    env.navigate('#faction/huizenberg-empire');
+    env.navigate('faction/huizenberg-empire');
     const factionViewport = env.document.getElementById('contentViewport');
     assert.includes(factionViewport.textContent, 'Хуйзенберг', 'Faction article must load and display details');
+    assert.equal(env.window.location.pathname, '/Vovsehuyevie/faction/huizenberg-empire/', 'Faction URL must be hash-free');
   } catch (e) {
     if (e.name !== 'AssertionError') throw e;
   }
@@ -86,10 +87,11 @@ async function runTier4Tests(reporter) {
 
   reporter.startTest('Step 6: Reader returns to home portal cleanly');
   try {
-    const env = createBrowserEnvironment({ initialHash: '#faction/huizenberg-empire' });
-    env.navigate('#home');
+    const env = createBrowserEnvironment({ initialPath: '/Vovsehuyevie/faction/huizenberg-empire/' });
+    env.navigate('home');
     const viewport = env.document.getElementById('contentViewport');
     assert.ok(viewport.querySelector('.portal-hero'), 'Home portal must reload cleanly');
+    assert.equal(env.window.location.pathname, '/Vovsehuyevie/', 'Home URL must be root path');
   } catch (e) {
     if (e.name !== 'AssertionError') throw e;
   }
@@ -104,7 +106,7 @@ async function runTier4Tests(reporter) {
 
   reporter.startTest('Step 1: User invokes search with Ctrl+K shortcut');
   try {
-    const env = createBrowserEnvironment({ initialHash: '#characters' });
+    const env = createBrowserEnvironment({ initialPath: '/Vovsehuyevie/characters/' });
     env.window.dispatchEvent({
       type: 'keydown',
       key: 'k',
@@ -146,7 +148,7 @@ async function runTier4Tests(reporter) {
   }
   reporter.endTest();
 
-  reporter.startTest('Step 4: User presses Enter to activate result and navigate');
+  reporter.startTest('Step 4: User presses Enter to activate result and navigate without #');
   try {
     const env = createBrowserEnvironment();
     env.click('#openSearchBtn');
@@ -156,7 +158,8 @@ async function runTier4Tests(reporter) {
     input.dispatchEvent({ type: 'keydown', key: 'Enter', bubbles: true, preventDefault: () => {} });
     const modal = env.document.getElementById('searchModal');
     assert.equal(modal.classList.contains('hidden'), true, 'Modal should close on Enter');
-    assert.includes(env.window.location.hash, '#character/', 'URL hash should navigate to character');
+    assert.includes(env.window.location.pathname, '/character/', 'URL pathname should navigate to character');
+    assert.equal(env.window.location.hash, '', 'URL must not contain #');
   } catch (e) {
     if (e.name !== 'AssertionError') throw e;
   }
@@ -165,7 +168,7 @@ async function runTier4Tests(reporter) {
   reporter.startTest('Step 5: Article renders and document.title is updated');
   try {
     const env = createBrowserEnvironment();
-    env.navigate('#character/valentin-belinsky');
+    env.navigate('character/valentin-belinsky');
     const viewport = env.document.getElementById('contentViewport');
     assert.includes(viewport.textContent, 'Валентин Белинский', 'Valentin Belinsky article must render');
     assert.includes(env.document.title, 'Валентин Белинский', 'Document title must update to character name');
@@ -179,7 +182,7 @@ async function runTier4Tests(reporter) {
   // -------------------------------------------------------------------------
   // Scenario 3: Mobile Viewport Layout & Touch Navigation
   // -------------------------------------------------------------------------
-  reporter.startSuite('Tier 4 Scenario 3: Mobile Viewport Layout', 'Responsive header, wrapping, touch targets, and scrolling');
+  reporter.startSuite('Tier 4 Scenario 3: Mobile Viewport Layout', 'Responsive header, wrapping, touch targets, and Episodes/Timeline/Graph navigation');
 
   reporter.startTest('Step 1: Mobile CSS defines height: auto on .wiki-header in media query');
   try {
@@ -207,37 +210,47 @@ async function runTier4Tests(reporter) {
     const logo = env.document.getElementById('homeLogoBtn');
     const searchBtn = env.document.getElementById('openSearchBtn');
     const themeBtn = env.document.getElementById('themeToggleBtn');
+    const randBtn = env.document.getElementById('randomArticleBtn');
     assert.ok(logo, 'Logo must exist in mobile header');
     assert.ok(searchBtn, 'Search trigger must exist in mobile header');
     assert.ok(themeBtn, 'Theme toggle must exist in mobile header');
+    assert.ok(randBtn, 'Random article button must exist in mobile header');
   } catch (e) {
     if (e.name !== 'AssertionError') throw e;
   }
   reporter.endTest();
 
-  reporter.startTest('Step 4: Mobile user taps "Серии" button to view episodes registry');
+  reporter.startTest('Step 4: Reader taps "Серии" link, sees 9 episodes, and opens stub placeholder');
   try {
     const env = createBrowserEnvironment();
     const episodesBtn = env.document.querySelector('.nav-btn[data-view="episodes"]');
-    assert.ok(episodesBtn, 'Episodes nav button must exist');
+    assert.ok(episodesBtn, 'Episodes nav link must exist');
     episodesBtn.click();
-    assert.equal(env.window.location.hash, '#episodes', 'Hash should change to #episodes');
-    const viewport = env.document.getElementById('contentViewport');
-    assert.includes(viewport.textContent, 'Серии', 'Episodes view must be rendered');
+    assert.equal(env.window.location.pathname, '/Vovsehuyevie/episodes/', 'Pathname should change to /Vovsehuyevie/episodes/');
+    const epCards = env.document.querySelectorAll('#contentViewport .episode-card');
+    assert.equal(epCards.length, 9, 'Episodes directory must list all 9 canon episodes/film');
+    epCards[0].click();
+    assert.includes(env.window.location.pathname, '/episode/', 'Clicking episode card navigates to /episode/ stub');
+    assert.includes(env.document.getElementById('contentViewport').textContent, 'в разработке', 'Individual episode page should render as placeholder stub');
   } catch (e) {
     if (e.name !== 'AssertionError') throw e;
   }
   reporter.endTest();
 
-  reporter.startTest('Step 5: Mobile user taps "Хронология" button to view timeline');
+  reporter.startTest('Step 5: Reader taps "Хронология" and "Граф связей" links cleanly without #');
   try {
     const env = createBrowserEnvironment();
     const timelineBtn = env.document.querySelector('.nav-btn[data-view="timeline"]');
-    assert.ok(timelineBtn, 'Timeline nav button must exist');
+    assert.ok(timelineBtn, 'Timeline nav link must exist');
     timelineBtn.click();
-    assert.equal(env.window.location.hash, '#timeline', 'Hash should change to #timeline');
-    const viewport = env.document.getElementById('contentViewport');
-    assert.includes(viewport.textContent, 'Хронология', 'Timeline view must be rendered');
+    assert.equal(env.window.location.pathname, '/Vovsehuyevie/timeline/', 'Pathname should change to /Vovsehuyevie/timeline/');
+    assert.includes(env.document.getElementById('contentViewport').textContent, 'Хронология', 'Timeline view must be rendered');
+
+    const graphBtn = env.document.querySelector('.nav-btn[data-view="graph"]');
+    assert.ok(graphBtn, 'Graph nav link must exist');
+    graphBtn.click();
+    assert.equal(env.window.location.pathname, '/Vovsehuyevie/graph/', 'Pathname should change to /Vovsehuyevie/graph/');
+    assert.ok(env.document.getElementById('relationshipGraphSvg'), 'Relationship SVG graph must render');
   } catch (e) {
     if (e.name !== 'AssertionError') throw e;
   }
@@ -297,11 +310,14 @@ async function runTier4Tests(reporter) {
   try {
     const env = createBrowserEnvironment({ storageMode: 'restricted' });
     assert.doesNotThrow(() => {
-      env.navigate('#home');
-      env.navigate('#characters');
-      env.navigate('#character/jesse-pinkman');
-      env.navigate('#factions');
-      env.navigate('#timeline');
+      env.navigate('home');
+      env.navigate('characters');
+      env.navigate('character/jesse-pinkman');
+      env.navigate('factions');
+      env.navigate('episodes');
+      env.navigate('episode/put-rozovogo');
+      env.navigate('timeline');
+      env.navigate('graph');
     }, 'Multi-page navigation must not throw in restricted storage');
   } catch (e) {
     if (e.name !== 'AssertionError') throw e;

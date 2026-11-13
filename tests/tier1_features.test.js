@@ -269,7 +269,7 @@ async function runTier1Tests(reporter) {
   }
   reporter.endTest();
 
-  reporter.startTest('Pressing Enter on selected result navigates to article and closes modal');
+  reporter.startTest('Pressing Enter on selected result navigates to article and closes modal without #');
   try {
     const env = createBrowserEnvironment();
     env.click('#openSearchBtn');
@@ -281,7 +281,8 @@ async function runTier1Tests(reporter) {
 
     const modal = env.document.getElementById('searchModal');
     assert.equal(modal.classList.contains('hidden'), true, 'Modal should close after Enter selection');
-    assert.includes(env.window.location.hash, '#character/', 'URL hash should navigate to selected character');
+    assert.includes(env.window.location.pathname, '/character/', 'URL pathname should navigate to selected character without #');
+    assert.equal(env.window.location.hash, '', 'URL hash must remain empty');
   } catch (e) {
     if (e.name !== 'AssertionError') throw e;
   }
@@ -292,7 +293,7 @@ async function runTier1Tests(reporter) {
   // -------------------------------------------------------------------------
   // Feature 4: Search Debounce
   // -------------------------------------------------------------------------
-  reporter.startSuite('Feature 4: Search Debounce', '150ms debounce utility on search inputs');
+  reporter.startSuite('Feature 4: Search Debounce', '150ms debounce utility on search inputs without double-firing');
 
   reporter.startTest('Search code incorporates debounce utility');
   try {
@@ -304,25 +305,19 @@ async function runTier1Tests(reporter) {
   }
   reporter.endTest();
 
-  reporter.startTest('Rapid keystrokes do not trigger synchronous multiple search executions');
+  reporter.startTest('Rapid keystrokes are wrapped with debouncing and single leading call avoids duplicate execution');
   try {
     const env = createBrowserEnvironment();
-    env.click('#openSearchBtn');
-    const input = env.document.getElementById('globalSearchInput');
-
-    let renderCallCount = 0;
-    const resultsContainer = env.document.getElementById('searchResultsList');
-    // Monitor innerHTML changes
-    const originalSet = Object.getOwnPropertyDescriptor(resultsContainer, 'innerHTML') || {};
-
-    env.type('#globalSearchInput', 'Б');
-    env.type('#globalSearchInput', 'Бе');
-    env.type('#globalSearchInput', 'Бел');
-    env.type('#globalSearchInput', 'Бели');
-
-    // On debounced input, DOM should not be completely rebuilt 4 times synchronously
     const appCode = getJSAppContent();
     assert.match(appCode, /debounce\s*\(|setTimeout.*search/i, 'Search input should be wrapped with debouncing');
+    const callsAfterOneTrigger = env.eval(`(() => {
+      let count = 0;
+      const timerCheck = debounce(() => { count++; }, 150, true);
+      timerCheck('a');
+      return count;
+    })()`);
+    assert.equal(callsAfterOneTrigger, 1, 'Immediate debounce must execute once synchronously on single trigger');
+    assert.includes(appCode, 'hasTrailingArgs', 'Debounce should track trailing calls to avoid double-execution on a single trigger');
   } catch (e) {
     if (e.name !== 'AssertionError') throw e;
   }
@@ -341,7 +336,7 @@ async function runTier1Tests(reporter) {
   reporter.startTest('Catalog directory search input utilizes debouncing');
   try {
     const env = createBrowserEnvironment();
-    env.navigate('#characters');
+    env.navigate('characters');
     const dirInput = env.document.getElementById('dirSearchInput');
     assert.ok(dirInput, 'Directory search input #dirSearchInput should exist');
   } catch (e) {
@@ -349,17 +344,15 @@ async function runTier1Tests(reporter) {
   }
   reporter.endTest();
 
-  reporter.startTest('Final debounced search output accurately reflects last query string');
+  reporter.startTest('Search debounce handles rapid typing cleanly without crashing');
   try {
     const env = createBrowserEnvironment();
     env.click('#openSearchBtn');
+    env.type('#globalSearchInput', 'Б');
+    env.type('#globalSearchInput', 'Бе');
     env.type('#globalSearchInput', 'Гусь');
-    // Allow debounce to execute
-    setTimeout(() => {
-      const results = env.document.querySelectorAll('#searchResultsList .search-result-item');
-      assert.gte(results.length, 0, 'Results container should be rendered');
-    }, 200);
-    assert.ok(true, 'Search debounce completes and renders cleanly');
+    const results = env.document.querySelectorAll('#searchResultsList .search-result-item');
+    assert.gte(results.length, 1, 'Results container should render cleanly');
   } catch (e) {
     if (e.name !== 'AssertionError') throw e;
   }
@@ -375,7 +368,6 @@ async function runTier1Tests(reporter) {
   reporter.startTest('Regex pattern is precompiled at module level (not inside function body)');
   try {
     const appCode = getJSAppContent();
-    // Check that new RegExp is not dynamically recreated inside renderWikiProse
     const renderProseMatch = appCode.match(/function renderWikiProse[\s\S]*?\{([\s\S]*?)\n\}/);
     if (renderProseMatch) {
       const body = renderProseMatch[1];
@@ -387,22 +379,35 @@ async function runTier1Tests(reporter) {
   }
   reporter.endTest();
 
-  reporter.startTest('renderWikiProse auto-links character names');
+  reporter.startTest('renderWikiProse auto-links character names without #');
   try {
     const env = createBrowserEnvironment();
     const html = env.eval("renderWikiProse('Валентин Белинский начал варить мефедрон.')");
-    assert.includes(html, '#character/valentin-belinsky', 'Should create a link to valentin-belinsky');
+    assert.includes(html, 'character/valentin-belinsky/', 'Should create hash-free link to valentin-belinsky');
+    assert.notIncludes(html, '#', 'Auto-linked character URL must not contain #');
     assert.includes(html, 'wiki-link', 'Should add wiki-link class');
   } catch (e) {
     if (e.name !== 'AssertionError') throw e;
   }
   reporter.endTest();
 
-  reporter.startTest('renderWikiProse auto-links faction names');
+  reporter.startTest('renderWikiProse auto-links faction names without #');
   try {
     const env = createBrowserEnvironment();
     const html = env.eval("renderWikiProse('Сотрудники ОБН Подзалупинска провели рейд.')");
-    assert.includes(html, '#faction/obn-podzalupinsk', 'Should create a link to obn-podzalupinsk');
+    assert.includes(html, 'faction/obn-podzalupinsk/', 'Should create hash-free link to obn-podzalupinsk');
+    assert.notIncludes(html, '#', 'Auto-linked faction URL must not contain #');
+  } catch (e) {
+    if (e.name !== 'AssertionError') throw e;
+  }
+  reporter.endTest();
+
+  reporter.startTest('renderWikiProse auto-links episode names without #');
+  try {
+    const env = createBrowserEnvironment();
+    const html = env.eval("renderWikiProse('Впервые это произошло в серии «Звоните Сосику».')");
+    assert.includes(html, 'episode/zvonite-sosiku/', 'Should create hash-free link to zvonite-sosiku episode');
+    assert.notIncludes(html, '#', 'Auto-linked episode URL must not contain #');
   } catch (e) {
     if (e.name !== 'AssertionError') throw e;
   }
@@ -436,21 +441,23 @@ async function runTier1Tests(reporter) {
   // -------------------------------------------------------------------------
   // Feature 6: Data Integrity & Character Record
   // -------------------------------------------------------------------------
-  reporter.startSuite('Feature 6: Data Integrity & Character Record', 'Add gusev-ferangiy and fix relationships');
+  reporter.startSuite('Feature 6: Data Integrity & Character Record', 'Canon character registry (7 chars), redlinks, status classes, and unified faction membership');
 
-  reporter.startTest('Character gusev-ferangiy exists in DEFAULT_WIKI_DATA.characters');
+  reporter.startTest('Canon character registry keeps exact 7 approved characters including gusev-ferangiy (no new characters added)');
   try {
     const env = createBrowserEnvironment();
     const data = env.getData() || {};
     const chars = data.characters || [];
+    assert.equal(chars.length, 7, 'Must keep exact 7 canon characters (no maxim-kats or unapproved characters)');
     const gusev = chars.find(c => c.id === 'gusev-ferangiy');
     assert.ok(gusev, 'gusev-ferangiy must be defined in characters');
+    assert.equal(chars.some(c => c.id === 'maxim-kats'), false, 'maxim-kats must not be added to canon characters');
   } catch (e) {
     if (e.name !== 'AssertionError') throw e;
   }
   reporter.endTest();
 
-  reporter.startTest('Character gusev-ferangiy has complete attributes');
+  reporter.startTest('Character gusev-ferangiy has complete attributes and Sosik Goodman status class is valid');
   try {
     const env = createBrowserEnvironment();
     const chars = env.getData().characters || [];
@@ -458,39 +465,55 @@ async function runTier1Tests(reporter) {
     assert.ok(gusev, 'gusev-ferangiy must exist');
     assert.includes(gusev.name, 'Гусев', 'Name must include Гусев');
     assert.equal(gusev.factionId, 'gusev-empire', 'factionId must be gusev-empire');
+    env.navigate('character/sosik-goodman');
+    const prisonStatusEl = env.document.querySelector('.infobox-status-text-отбывает-срок');
+    assert.ok(prisonStatusEl, 'Sosik Goodman infobox must use infobox-status-text-отбывает-срок class');
   } catch (e) {
     if (e.name !== 'AssertionError') throw e;
   }
   reporter.endTest();
 
-  reporter.startTest('Faction gusev-empire notableMembers includes gusev-ferangiy');
+  reporter.startTest('Faction gusev-empire notableMembers includes gusev-ferangiy and filter shows 3 members');
   try {
     const env = createBrowserEnvironment();
     const factions = env.getData().factions || [];
     const gusevFaction = factions.find(f => f.id === 'gusev-empire');
     assert.ok(gusevFaction, 'gusev-empire must exist');
     assert.includes(gusevFaction.notableMembers, 'gusev-ferangiy', 'notableMembers must include gusev-ferangiy');
+    env.navigate('characters?faction=gusev-empire');
+    const cards = env.document.querySelectorAll('#directoryCardsGrid .wiki-card');
+    assert.equal(cards.length, 3, 'Filtering characters?faction=gusev-empire must display all 3 members');
   } catch (e) {
     if (e.name !== 'AssertionError') throw e;
   }
   reporter.endTest();
 
-  reporter.startTest('Relationship links target gusev-ferangiy character page directly');
+  reporter.startTest('Unresolved relationship targets render clean .mw-redlink buttons without "undefined" or "null"');
   try {
+    const env = createBrowserEnvironment();
     const appCode = getJSAppContent();
     const hasWorkaround = appCode.includes("rel.charId === 'gusev-ferangiy' ? '#faction/gusev-empire'");
     assert.equal(hasWorkaround, false, 'Workaround fallback link to #faction/gusev-empire should be eliminated');
+    env.navigate('character/gusev-ferangiy');
+    const redlinks = env.document.querySelectorAll('.mw-redlink');
+    assert.gte(redlinks.length, 1, 'Gusev article should render .mw-redlink for characters without separate articles yet');
+    const viewportText = env.document.getElementById('contentViewport').textContent;
+    assert.notIncludes(viewportText, 'undefined', 'Redlinks must not display undefined');
+    assert.notIncludes(viewportText, 'null', 'Redlinks must not display null');
   } catch (e) {
     if (e.name !== 'AssertionError') throw e;
   }
   reporter.endTest();
 
-  reporter.startTest('renderFactionArticle for gusev-empire displays all notable members');
+  reporter.startTest('renderFactionArticle for gusev-empire displays all notable members, alignment, and color');
   try {
     const env = createBrowserEnvironment();
-    env.navigate('#faction/gusev-empire');
+    env.navigate('faction/gusev-empire');
     const memberCards = env.document.querySelectorAll('#contentViewport .wiki-card');
     assert.gte(memberCards.length, 3, 'gusev-empire should display 3 notable members (Gusev, Valentin, Gey-Himbiovech)');
+    const viewportHtml = env.document.getElementById('contentViewport').innerHTML;
+    assert.includes(viewportHtml, 'Законно-злой', 'Faction article should display alignment');
+    assert.includes(viewportHtml, '--faction-accent', 'Faction article should apply faction color custom property');
   } catch (e) {
     if (e.name !== 'AssertionError') throw e;
   }
@@ -499,56 +522,84 @@ async function runTier1Tests(reporter) {
   reporter.endSuite();
 
   // -------------------------------------------------------------------------
-  // Feature 7: Dynamic Document Title & Anchor Routing
+  // Feature 7: Dynamic Document Title, History API Routing & New Views
   // -------------------------------------------------------------------------
-  reporter.startSuite('Feature 7: Dynamic Document Title & Anchor Routing', 'Route-based document.title updates and #sec-* landing fix');
+  reporter.startSuite('Feature 7: Dynamic Title, History Routing & Approved Views', 'Clean #-free routing, Episodes directory/stubs, Relationship Graph, Random Article, and excluded newsBanner');
 
-  reporter.startTest('Document title updates on #home navigation');
+  reporter.startTest('Document title and History URL update on home navigation');
   try {
     const env = createBrowserEnvironment();
-    env.navigate('#home');
+    env.navigate('home');
     assert.includes(env.document.title, 'Во Все Хуёвые', 'Title should include site title');
+    assert.equal(env.window.location.hash, '', 'Home URL must not use #');
+    const heroHtml = env.document.getElementById('contentViewport').innerHTML;
+    assert.includes(heroHtml, 'portal-tagline', 'Home portal should display universe.tagline');
+    assert.equal(heroHtml.includes('newsBanner') || heroHtml.includes('уже доступен в архивах'), false, 'newsBanner must NOT be rendered');
+    assert.equal(getJSAppContent().includes('newsBanner'), false, 'js/app.js must not reference universe.newsBanner');
   } catch (e) {
     if (e.name !== 'AssertionError') throw e;
   }
   reporter.endTest();
 
-  reporter.startTest('Document title updates on #characters directory');
+  reporter.startTest('Document title updates on characters directory');
   try {
     const env = createBrowserEnvironment();
-    env.navigate('#characters');
+    env.navigate('characters');
     assert.includes(env.document.title, 'Персонажи', 'Title should indicate Персонажи view');
+    assert.equal(env.window.location.pathname, '/Vovsehuyevie/characters/', 'URL must be /Vovsehuyevie/characters/');
   } catch (e) {
     if (e.name !== 'AssertionError') throw e;
   }
   reporter.endTest();
 
-  reporter.startTest('Document title updates on #character/valentin-belinsky');
+  reporter.startTest('Document title updates on character/valentin-belinsky');
   try {
     const env = createBrowserEnvironment();
-    env.navigate('#character/valentin-belinsky');
+    env.navigate('character/valentin-belinsky');
     assert.includes(env.document.title, 'Валентин Белинский', 'Title should include character name');
+    assert.equal(env.window.location.pathname, '/Vovsehuyevie/character/valentin-belinsky/', 'URL must be /Vovsehuyevie/character/valentin-belinsky/');
   } catch (e) {
     if (e.name !== 'AssertionError') throw e;
   }
   reporter.endTest();
 
-  reporter.startTest('Document title updates on #factions directory');
+  reporter.startTest('Document title updates on factions directory and episodes views work with placeholder stubs');
   try {
     const env = createBrowserEnvironment();
-    env.navigate('#factions');
+    env.navigate('factions');
     assert.includes(env.document.title, 'Группировки', 'Title should indicate Группировки view');
+    env.navigate('episodes');
+    assert.includes(env.document.title, 'Серии', 'Title should indicate Серии view');
+    const epCards = env.document.querySelectorAll('#contentViewport .episode-card');
+    assert.equal(epCards.length, 9, 'Episodes directory must list all 9 canon entries');
+    env.navigate('episode/pilot-mefedrona');
+    const stubText = env.document.getElementById('contentViewport').textContent;
+    assert.includes(stubText, 'в разработке', 'Individual episode page must remain a clean placeholder stub');
   } catch (e) {
     if (e.name !== 'AssertionError') throw e;
   }
   reporter.endTest();
 
-  reporter.startTest('Initial landing on #sec-* renders default content instead of empty viewport');
+  reporter.startTest('Graph route renders SVG and #randomArticleBtn navigates cleanly without #');
+  try {
+    const env = createBrowserEnvironment();
+    env.navigate('graph');
+    assert.includes(env.document.title, 'Граф связей', 'Title should indicate Граф связей view');
+    assert.ok(env.document.getElementById('relationshipGraphSvg'), 'Graph route must render #relationshipGraphSvg');
+    env.click('#randomArticleBtn');
+    assert.equal(env.window.location.hash, '', 'Random article navigation must not introduce # in URL');
+    assert.match(env.window.location.pathname, /\/(character|faction|episode)\/[^/]+\/$/, 'Random article must navigate to a canonical article URL');
+  } catch (e) {
+    if (e.name !== 'AssertionError') throw e;
+  }
+  reporter.endTest();
+
+  reporter.startTest('Legacy initial landing on #sec-* renders default content instead of empty viewport');
   try {
     const env = createBrowserEnvironment({ initialHash: '#sec-biography' });
     const viewport = env.document.getElementById('contentViewport');
     assert.ok(viewport, 'contentViewport must exist');
-    assert.gte(viewport.children.length, 1, 'contentViewport must not be empty when landing on an anchor link directly');
+    assert.gte(viewport.children.length, 1, 'contentViewport must not be empty when landing on legacy #sec-* fragment');
   } catch (e) {
     if (e.name !== 'AssertionError') throw e;
   }
@@ -564,7 +615,7 @@ async function runTier1Tests(reporter) {
   reporter.startTest('Character TOC contains sequential section numbers');
   try {
     const env = createBrowserEnvironment();
-    env.navigate('#character/valentin-belinsky');
+    env.navigate('character/valentin-belinsky');
     const tocNums = Array.from(env.document.querySelectorAll('.toc-num')).map(el => el.textContent.trim());
     assert.gte(tocNums.length, 3, 'TOC should have at least 3 sections');
     assert.equal(tocNums[0], '1', 'First TOC section must be 1');
@@ -578,7 +629,7 @@ async function runTier1Tests(reporter) {
   try {
     const env = createBrowserEnvironment();
     // Test on character without personality or relationships
-    env.navigate('#character/stoyak-belinsky');
+    env.navigate('character/stoyak-belinsky');
     const tocNums = Array.from(env.document.querySelectorAll('.toc-num')).map(el => el.textContent.trim());
     const uniqueNums = new Set(tocNums);
     assert.equal(uniqueNums.size, tocNums.length, 'Every TOC number must be unique');
@@ -590,7 +641,7 @@ async function runTier1Tests(reporter) {
   reporter.startTest('Headline numbers in article body match TOC numbers');
   try {
     const env = createBrowserEnvironment();
-    env.navigate('#character/valentin-belinsky');
+    env.navigate('character/valentin-belinsky');
     const headlineNums = Array.from(env.document.querySelectorAll('.mw-headline-number')).map(el => el.textContent.replace('.', '').trim());
     const tocNums = Array.from(env.document.querySelectorAll('.toc-num')).map(el => el.textContent.trim());
     if (headlineNums.length > 0 && tocNums.length > 0) {
@@ -604,7 +655,7 @@ async function runTier1Tests(reporter) {
   reporter.startTest('Categories section numbering follows monotonically');
   try {
     const env = createBrowserEnvironment();
-    env.navigate('#character/valentin-belinsky');
+    env.navigate('character/valentin-belinsky');
     const tocNums = Array.from(env.document.querySelectorAll('.toc-num')).map(el => parseInt(el.textContent.trim(), 10));
     for (let i = 1; i < tocNums.length; i++) {
       assert.equal(tocNums[i], tocNums[i - 1] + 1, `TOC numbers must increment by 1 (found ${tocNums[i - 1]} followed by ${tocNums[i]})`);
@@ -657,8 +708,8 @@ async function runTier1Tests(reporter) {
   try {
     const env = createBrowserEnvironment();
     assert.doesNotThrow(() => {
-      env.navigate('#character/valentin-belinsky');
-      env.navigate('#faction/huizenberg-empire');
+      env.navigate('character/valentin-belinsky');
+      env.navigate('faction/huizenberg-empire');
     }, 'Navigation should not depend on slugify');
   } catch (e) {
     if (e.name !== 'AssertionError') throw e;
@@ -1007,46 +1058,73 @@ async function runTier1Tests(reporter) {
   // -------------------------------------------------------------------------
   // Feature 15: Semantic Markup & Accessible Navigation
   // -------------------------------------------------------------------------
-  reporter.startSuite('Feature 15: Semantic Markup & Accessible Navigation', 'Accessible buttons, links, labels, and modal semantics');
+  reporter.startSuite('Feature 15: Semantic Markup & Accessible Navigation', 'Accessible buttons, links, ARIA roles, and hash-free navigation semantics');
 
-  reporter.startTest('#homeLogoBtn is semantic link <a> with href="#home"');
+  reporter.startTest('#homeLogoBtn is semantic link <a> without # and main nav uses clean URLs');
   try {
     const env = createBrowserEnvironment();
     const logoEl = env.document.getElementById('homeLogoBtn');
     assert.ok(logoEl, '#homeLogoBtn must exist');
     assert.equal(logoEl.tagName, 'A', '#homeLogoBtn should be an <a> anchor element');
-    assert.equal(logoEl.getAttribute('href'), '#home', '#homeLogoBtn href must point to #home');
+    assert.equal(logoEl.getAttribute('href'), './', '#homeLogoBtn href must point cleanly to "./"');
+    assert.notIncludes(logoEl.getAttribute('href'), '#', '#homeLogoBtn must not contain #');
+
+    const navLinks = env.document.querySelectorAll('.main-nav .nav-btn');
+    assert.equal(navLinks.length, 6, 'Main nav should have 6 links (Главная, Персонажи, Группировки, Серии, Хронология, Граф связей)');
+    navLinks.forEach(link => {
+      assert.equal(link.tagName, 'A', 'Nav button should be a semantic <a> link');
+      assert.notIncludes(link.getAttribute('href') || '', '#', 'Nav link must not contain #');
+    });
+
+    const html = getHTMLContent();
+    assert.equal(/href\s*=\s*["']#["']/i.test(html), false, 'index.html must contain zero <a href="#"> placeholders');
+    const exportBtn = env.document.getElementById('exportDataBtn');
+    const resetBtn = env.document.getElementById('resetDataBtn');
+    assert.equal(exportBtn.tagName, 'BUTTON', '#exportDataBtn should be a <button>');
+    assert.equal(resetBtn.tagName, 'BUTTON', '#resetDataBtn should be a <button>');
   } catch (e) {
     if (e.name !== 'AssertionError') throw e;
   }
   reporter.endTest();
 
-  reporter.startTest('#openSearchBtn is semantic <button> with type="button" and aria-label');
+  reporter.startTest('Header action buttons (#openSearchBtn, #randomArticleBtn, #backToTopBtn) are accessible <button> elements');
   try {
     const env = createBrowserEnvironment();
     const searchBtn = env.document.getElementById('openSearchBtn');
-    assert.ok(searchBtn, '#openSearchBtn must exist');
-    assert.equal(searchBtn.tagName, 'BUTTON', '#openSearchBtn should be a <button> element');
-    assert.equal(searchBtn.getAttribute('type'), 'button', 'Must have type="button"');
-    assert.ok(searchBtn.hasAttribute('aria-label'), 'Must have aria-label');
+    const randBtn = env.document.getElementById('randomArticleBtn');
+    const topBtn = env.document.getElementById('backToTopBtn');
+    assert.ok(searchBtn && randBtn && topBtn, 'All accessible action buttons must exist');
+    [searchBtn, randBtn, topBtn].forEach(btn => {
+      assert.equal(btn.tagName, 'BUTTON', 'Action control must be a <button>');
+      assert.equal(btn.getAttribute('type'), 'button', 'Action button must have type="button"');
+      assert.ok(btn.hasAttribute('aria-label'), 'Action button must define aria-label');
+    });
   } catch (e) {
     if (e.name !== 'AssertionError') throw e;
   }
   reporter.endTest();
 
-  reporter.startTest('#searchModal has role="dialog" and aria-modal="true"');
+  reporter.startTest('#searchModal and #architectureModal expose proper ARIA dialog, listbox, and tablist roles');
   try {
     const env = createBrowserEnvironment();
     const modal = env.document.getElementById('searchModal');
     assert.ok(modal, '#searchModal must exist');
     assert.equal(modal.getAttribute('role'), 'dialog', '#searchModal should have role="dialog"');
     assert.equal(modal.getAttribute('aria-modal'), 'true', '#searchModal should have aria-modal="true"');
+
+    const listbox = env.document.getElementById('searchResultsList');
+    assert.equal(listbox.getAttribute('role'), 'listbox', '#searchResultsList must have role="listbox"');
+
+    const tablist = env.document.querySelector('#architectureModal [role="tablist"]');
+    const tabs = env.document.querySelectorAll('#architectureModal [role="tab"]');
+    assert.ok(tablist, '#architectureModal should expose role="tablist"');
+    assert.equal(tabs.length, 2, '#architectureModal should expose 2 ARIA tabs');
   } catch (e) {
     if (e.name !== 'AssertionError') throw e;
   }
   reporter.endTest();
 
-  reporter.startTest('#globalSearchInput has accessible label or aria-label');
+  reporter.startTest('#globalSearchInput has accessible aria-label and combobox attributes');
   try {
     const env = createBrowserEnvironment();
     const input = env.document.getElementById('globalSearchInput');
@@ -1054,19 +1132,22 @@ async function runTier1Tests(reporter) {
     const hasAria = input.hasAttribute('aria-label');
     const hasLabel = Boolean(env.document.querySelector('label[for="globalSearchInput"]'));
     assert.ok(hasAria || hasLabel, '#globalSearchInput must have aria-label or associated label');
+    assert.equal(input.getAttribute('role'), 'combobox', '#globalSearchInput must have role="combobox"');
+    assert.equal(input.getAttribute('aria-controls'), 'searchResultsList', 'Must reference searchResultsList');
   } catch (e) {
     if (e.name !== 'AssertionError') throw e;
   }
   reporter.endTest();
 
-  reporter.startTest('Featured character hero card contains accessible link');
+  reporter.startTest('Featured character hero card contains accessible hash-free link');
   try {
     const env = createBrowserEnvironment();
-    env.navigate('#home');
+    env.navigate('home');
     const heroCard = env.document.querySelector('.wiki-card');
     assert.ok(heroCard, 'Hero card should render on home portal');
     const linkInside = heroCard.querySelector('a');
     assert.ok(linkInside, 'Featured hero card must contain an accessible <a> link');
+    assert.notIncludes(linkInside.getAttribute('href') || '', '#', 'Hero card link must not contain #');
   } catch (e) {
     if (e.name !== 'AssertionError') throw e;
   }
@@ -1077,7 +1158,7 @@ async function runTier1Tests(reporter) {
   // -------------------------------------------------------------------------
   // Feature 16: Complete SEO & Social Metadata
   // -------------------------------------------------------------------------
-  reporter.startSuite('Feature 16: Complete SEO & Social Metadata', 'Open Graph, Twitter Cards, Canonical, robots.txt, sitemap.xml');
+  reporter.startSuite('Feature 16: Complete SEO & Social Metadata', 'Open Graph, Twitter Cards, Canonical, robots.txt, hash-free sitemap.xml & pre-rendered pages');
 
   reporter.startTest('Open Graph meta tags (og:title, og:description, og:image, og:url) exist in index.html');
   try {
@@ -1086,6 +1167,7 @@ async function runTier1Tests(reporter) {
     assert.includes(html, 'property="og:description"', 'Must include og:description');
     assert.includes(html, 'property="og:image"', 'Must include og:image');
     assert.includes(html, 'property="og:url"', 'Must include og:url');
+    assert.includes(html, 'application/ld+json', 'Must include structured JSON-LD metadata');
   } catch (e) {
     if (e.name !== 'AssertionError') throw e;
   }
@@ -1100,19 +1182,26 @@ async function runTier1Tests(reporter) {
   }
   reporter.endTest();
 
-  reporter.startTest('Canonical link tag is defined in <head>');
+  reporter.startTest('Canonical link tag is defined in <head> without #');
   try {
     const html = getHTMLContent();
     assert.includes(html, 'rel="canonical"', 'Must include rel="canonical"');
+    const canonicalMatch = html.match(/<link[^>]*rel="canonical"[^>]*href="([^"]*)"/i);
+    assert.ok(canonicalMatch, 'Canonical URL must be present');
+    assert.notIncludes(canonicalMatch[1], '#', 'Canonical URL must not contain #');
   } catch (e) {
     if (e.name !== 'AssertionError') throw e;
   }
   reporter.endTest();
 
-  reporter.startTest('Favicon <link rel="icon"> is defined in <head>');
+  reporter.startTest('Favicon, apple-touch-icon, and manifest links exist in <head>');
   try {
     const html = getHTMLContent();
     assert.match(html, /<link[^>]*rel=["'](?:shortcut )?icon["']/i, 'Must define favicon link tag');
+    assert.includes(html, 'rel="apple-touch-icon"', 'Must include apple-touch-icon');
+    assert.includes(html, 'rel="manifest"', 'Must link manifest.webmanifest');
+    assert.ok(fileExists('manifest.webmanifest'), 'manifest.webmanifest must exist');
+    assert.ok(fileExists('sw.js'), 'sw.js must exist');
   } catch (e) {
     if (e.name !== 'AssertionError') throw e;
   }
@@ -1128,12 +1217,20 @@ async function runTier1Tests(reporter) {
   }
   reporter.endTest();
 
-  reporter.startTest('sitemap.xml exists at project root with valid XML structure');
+  reporter.startTest('sitemap.xml has >= 25 hash-free URLs and static pre-rendered pages exist');
   try {
     assert.ok(fileExists('sitemap.xml'), 'sitemap.xml must exist at project root');
     const content = getFileContent('sitemap.xml');
     assert.includes(content, '<urlset', 'sitemap.xml must define <urlset>');
-    assert.includes(content, '<loc>', 'sitemap.xml must contain <loc> entries');
+    const locMatches = content.match(/<loc>/g) || [];
+    assert.gte(locMatches.length, 25, `sitemap.xml should include at least 25 pre-rendered URLs (found ${locMatches.length})`);
+    assert.notIncludes(content, '#', 'sitemap.xml must contain ZERO # fragments');
+
+    assert.ok(fileExists('404.html'), '404.html must exist');
+    assert.includes(getFileContent('404.html'), 'noindex, follow', '404.html must have noindex, follow robots meta');
+    assert.ok(fileExists('episodes/index.html'), 'Pre-rendered episodes/index.html must exist');
+    assert.ok(fileExists('graph/index.html'), 'Pre-rendered graph/index.html must exist');
+    assert.ok(fileExists('character/valentin-belinsky/index.html'), 'Pre-rendered character page must exist');
   } catch (e) {
     if (e.name !== 'AssertionError') throw e;
   }
@@ -1144,7 +1241,7 @@ async function runTier1Tests(reporter) {
   // -------------------------------------------------------------------------
   // Feature 17: Image Loading Optimization
   // -------------------------------------------------------------------------
-  reporter.startSuite('Feature 17: Image Loading Optimization', 'width, height, and loading="lazy" attributes on avatar images');
+  reporter.startSuite('Feature 17: Image Loading Optimization', 'width, height, loading="lazy", WebP <picture> sources, and icon assets');
 
   reporter.startTest('renderAvatarHtml output includes loading="lazy"');
   try {
@@ -1176,11 +1273,27 @@ async function runTier1Tests(reporter) {
   }
   reporter.endTest();
 
-  reporter.startTest('renderAvatarHtml output includes descriptive alt attribute');
+  reporter.startTest('renderAvatarHtml generates WebP <picture> sources and eager high priority option');
   try {
     const env = createBrowserEnvironment();
-    const avatarHtml = env.eval("renderAvatarHtml({ id: 'valentin-belinsky', name: 'Валентин', avatar: 'valentin.jpg' })");
-    assert.includes(avatarHtml, 'alt="Валентин"', 'Avatar img must include alt text with character name');
+    const thumbHtml = env.eval("renderAvatarHtml({ id: 'valentin-belinsky', name: 'Валентин', avatar: 'assets/valentin.jpg', isImage: true })");
+    assert.includes(thumbHtml, '<picture>', 'Local portrait avatar should render a <picture> element');
+    assert.includes(thumbHtml, 'valentin-thumb.webp', 'Card avatar should reference compressed WebP thumbnail');
+    assert.includes(thumbHtml, 'alt="Валентин"', 'Avatar img must include alt text with character name');
+
+    const fullEagerHtml = env.eval("renderAvatarHtml({ id: 'valentin-belinsky', name: 'Валентин', avatar: 'assets/valentin.jpg', isImage: true }, { eager: true, size: 'full' })");
+    assert.includes(fullEagerHtml, 'valentin.webp', 'Infobox avatar should reference full WebP portrait');
+    assert.includes(fullEagerHtml, 'loading="eager"', 'Hero/infobox avatar should load eagerly');
+    assert.includes(fullEagerHtml, 'fetchpriority="high"', 'Hero/infobox avatar should declare high fetchpriority');
+
+    [
+      'assets/valentin.webp', 'assets/valentin-thumb.webp',
+      'assets/gusev.webp', 'assets/gusev-thumb.webp',
+      'assets/gey-himbiovech.webp', 'assets/gey-himbiovech-thumb.webp',
+      'assets/favicon-32.png', 'assets/favicon-192.png', 'assets/apple-touch-icon.png'
+    ].forEach(rel => {
+      assert.ok(fileExists(rel), `Optimized asset ${rel} must exist on disk`);
+    });
   } catch (e) {
     if (e.name !== 'AssertionError') throw e;
   }

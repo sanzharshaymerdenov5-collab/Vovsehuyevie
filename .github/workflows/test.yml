@@ -1,0 +1,26 @@
+name: Wiki CI & Static Build Check
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test-and-verify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Verify pre-rendered pages and sitemap
+        run: node scripts/build-pages.js --check
+
+      - name: Run Automated E2E Test Suite (Tiers 1-4)
+        run: node tests/e2e_runner.js

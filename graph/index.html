@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="wiki-depth" content="1">
+  <meta name="wiki-route" content="graph">
+  <title>Граф связей — «Во Все Хуёвые» Wiki</title>
+  <meta name="description" content="Интерактивная карта отношений между персонажами и группировками Подзалупинска.">
+  <meta name="keywords" content="Во Все Хуёвые, Хуйзенберг, Валентин Белинский, Джесси Розовый, Стояк, Подзалупинск, вики, энциклопедия, сериал">
+  <meta name="robots" content="index, follow">
+  <meta name="theme-color" content="#0f1117">
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Во Все Хуёвые — Википедия">
+  <meta property="og:title" content="Граф связей — «Во Все Хуёвые» Wiki">
+  <meta property="og:description" content="Интерактивная карта отношений между персонажами и группировками Подзалупинска.">
+  <meta property="og:url" content="https://sanzharshaymerdenov5-collab.github.io/Vovsehuyevie/graph/">
+  <meta property="og:image" content="https://sanzharshaymerdenov5-collab.github.io/Vovsehuyevie/assets/valentin.jpg">
+  <meta property="og:image:width" content="1024">
+  <meta property="og:image:height" content="649">
+  <meta property="og:locale" content="ru_RU">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Граф связей — «Во Все Хуёвые» Wiki">
+  <meta name="twitter:description" content="Интерактивная карта отношений между персонажами и группировками Подзалупинска.">
+  <meta name="twitter:image" content="https://sanzharshaymerdenov5-collab.github.io/Vovsehuyevie/assets/valentin.jpg">
+
+  <!-- Canonical, Manifest & Icons -->
+  <link rel="canonical" href="https://sanzharshaymerdenov5-collab.github.io/Vovsehuyevie/graph/">
+  <link rel="manifest" href="../manifest.webmanifest">
+  <link rel="icon" type="image/png" sizes="32x32" href="../assets/favicon-32.png">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚗️</text></svg>">
+  <link rel="apple-touch-icon" sizes="180x180" href="../assets/apple-touch-icon.png">
+
+  <!-- Resource & Font Preconnects -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600;700&family=Lora:wght@700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css?v=2.6">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"Граф связей — «Во Все Хуёвые» Wiki","description":"Интерактивная карта отношений между персонажами и группировками Подзалупинска.","url":"https://sanzharshaymerdenov5-collab.github.io/Vovsehuyevie/graph/","inLanguage":"ru","isPartOf":{"@type":"WebSite","name":"Во Все Хуёвые — Википедия","url":"https://sanzharshaymerdenov5-collab.github.io/Vovsehuyevie/"}}</script>
+</head>
+<body>
+  <!-- Skip Link for Accessibility (WCAG 2.1 AA) -->
+  <a href="#contentViewport" class="skip-link">Перейти к основному содержанию</a>
+
+  <!-- Верхняя панель навигации -->
+  <header class="wiki-header">
+    <div class="header-container">
+      <a href="../" class="logo-area" id="homeLogoBtn" data-view="home" aria-label="Во Все Хуёвые — Главная страница">
+        <div class="logo-icon">⚗️</div>
+        <div class="logo-text">
+          <span class="wiki-super" id="wikiUniverseTitle">ПАРОДИЙНАЯ ВИКИПЕДИЯ</span>
+          <span class="wiki-main" id="wikiMainTitle">Во Все Хуёвые</span>
+        </div>
+      </a>
+
+      <nav class="main-nav" aria-label="Основная навигация">
+        <a href="../" class="nav-btn" data-view="home">Главная</a>
+        <a href="../characters/" class="nav-btn" data-view="characters">Персонажи</a>
+        <a href="../factions/" class="nav-btn" data-view="factions">Группировки</a>
+        <a href="../episodes/" class="nav-btn" data-view="episodes">Серии</a>
+        <a href="../timeline/" class="nav-btn" data-view="timeline">Хронология</a>
+        <a href="../graph/" class="nav-btn active" data-view="graph" aria-current="page">Граф связей</a>
+      </nav>
+
+      <div class="header-actions">
+        <button type="button" class="header-icon-btn" id="randomArticleBtn" title="Случайная статья" aria-label="Открыть случайную статью">🎲</button>
+
+        <button type="button" class="search-trigger" id="openSearchBtn" aria-label="Открыть быстрый поиск">
+          <span class="search-icon">🔍</span>
+          <span class="search-placeholder">Быстрый поиск...</span>
+          <kbd class="kbd-shortcut">/</kbd>
+        </button>
+
+        <button type="button" class="theme-toggle-btn" id="themeToggleBtn" title="Сменить тему (Светлая / Тёмная)" aria-label="Сменить тему (Светлая / Тёмная)" aria-pressed="false">
+          <span id="themeIcon">🌙</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Подпанель: Хлебные крошки и статистика -->
+  <div class="sub-banner">
+    <div class="sub-banner-container">
+      <nav class="wiki-breadcrumbs" id="wikiBreadcrumbs" aria-label="Хлебные крошки"><a href="../">Вики</a><span class="bc-sep">/</span><span class="bc-current">Граф связей</span></nav>
+      <div class="wiki-quick-stats" id="quickStats">
+        <span class="stat-pill"><strong id="statCharCount">7</strong> Персонажей</span>
+        <span class="stat-pill"><strong id="statFactionCount">3</strong> Группировок</span>
+        <span class="stat-pill"><strong id="statArticleCount">21</strong> Статей</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Основной контент страницы -->
+  <main class="wiki-layout" id="mainLayout">
+    <div class="content-viewport" id="contentViewport" tabindex="-1">
+    <div class="article-container">
+      <div class="wiki-page-bar">
+        <div class="wiki-page-tabs-left">
+          <span class="wiki-page-tab active">🕸️ Граф связей</span>
+          <a href="../characters/" class="wiki-page-tab clickable">👥 Персонажи</a>
+        </div>
+        <div class="wiki-page-tabs-right">
+          <span class="wiki-badge-canon">7 героев • 12 связей</span>
+        </div>
+      </div>
+
+      <header class="article-header">
+        <div class="article-heading-group">
+          <h1 class="article-title">Интерактивная карта связей Подзалупинска</h1>
+          <div class="article-subheading">Выберите персонажа на схеме или отфильтруйте по группировке, чтобы увидеть все связи</div>
+        </div>
+      </header>
+
+      <div class="graph-toolbar">
+        <div class="graph-filter-group">
+          <span class="dir-filter-label">Фильтр:</span>
+          <button type="button" class="filter-chip active" data-graph-faction="all">Все группировки</button>
+          <button type="button" class="filter-chip" data-graph-faction="huizenberg-empire">Наркоимперия Хуйзенберга</button><button type="button" class="filter-chip" data-graph-faction="gusev-empire">Наркоимперия Гусева Ферангия</button><button type="button" class="filter-chip" data-graph-faction="obn-podzalupinsk">ОБН Подзалупинска (ГНК)</button>
+        </div>
+        <div class="graph-legend">
+          
+            <span class="graph-legend-item">
+              <span class="graph-legend-dot" style="background: #10b981;"></span>
+              <span>Наркоимперия Хуйзенберга</span>
+            </span>
+          
+            <span class="graph-legend-item">
+              <span class="graph-legend-dot" style="background: #f59e0b;"></span>
+              <span>Наркоимперия Гусева Ферангия</span>
+            </span>
+          
+            <span class="graph-legend-item">
+              <span class="graph-legend-dot" style="background: #3b82f6;"></span>
+              <span>ОБН Подзалупинска (ГНК)</span>
+            </span>
+          
+        </div>
+      </div>
+
+      <div class="graph-layout-grid">
+        <div class="graph-canvas-wrap">
+          <svg id="relationshipGraphSvg" class="graph-svg" viewbox="0 0 820 500" role="img" aria-label="Схема связей персонажей сериала Во Все Хуёвые">
+            <g class="graph-edges-layer">
+              <line class="graph-edge active" data-from="valentin-belinsky" data-to="skyler-belinskaya" x1="410" y1="250" x2="639" y2="335"><line class="graph-edge active" data-from="valentin-belinsky" data-to="stoyak-belinsky" x1="410" y1="250" x2="639" y2="165"><line class="graph-edge active" data-from="valentin-belinsky" data-to="jesse-pinkman" x1="410" y1="250" x2="410" y2="80"><line class="graph-edge active" data-from="valentin-belinsky" data-to="sosik-goodman" x1="410" y1="250" x2="410" y2="420"><line class="graph-edge dimmed" data-from="jesse-pinkman" data-to="sosik-goodman" x1="410" y1="80" x2="410" y2="420"><line class="graph-edge dimmed" data-from="jesse-pinkman" data-to="gey-himbiovech" x1="410" y1="80" x2="181" y2="335"><line class="graph-edge dimmed" data-from="stoyak-belinsky" data-to="skyler-belinskaya" x1="639" y1="165" x2="639" y2="335"><line class="graph-edge dimmed" data-from="stoyak-belinsky" data-to="gey-himbiovech" x1="639" y1="165" x2="181" y2="335"><line class="graph-edge dimmed" data-from="gey-himbiovech" data-to="gusev-ferangiy" x1="181" y1="335" x2="181" y2="165"><line class="graph-edge active" data-from="gey-himbiovech" data-to="valentin-belinsky" x1="181" y1="335" x2="410" y2="250"><line class="graph-edge active" data-from="gusev-ferangiy" data-to="valentin-belinsky" x1="181" y1="165" x2="410" y2="250"><line class="graph-edge dimmed" data-from="gusev-ferangiy" data-to="stoyak-belinsky" x1="181" y1="165" x2="639" y2="165">
+            </line></line></line></line></line></line></line></line></line></line></line></line></g>
+            <g class="graph-nodes-layer">
+              
+                <g class="graph-node" data-node-id="valentin-belinsky" data-faction-id="huizenberg-empire" role="button" tabindex="0" aria-label="Выбрать персонажа: Валентин Белинский">
+                  <circle class="graph-node-circle" cx="410" cy="250" r="30" fill="var(--bg-secondary)" stroke="#10b981" stroke-width="5">
+                  <text x="410" y="256" text-anchor="middle" font-size="20" pointer-events="none">👤</text>
+                  <text class="graph-node-label" x="410" y="298">Валентин Белинский</text>
+                  <text class="graph-node-sublabel" x="410" y="311">Мёртв</text>
+                </circle></g>
+              
+                <g class="graph-node" data-node-id="jesse-pinkman" data-faction-id="huizenberg-empire" role="button" tabindex="0" aria-label="Выбрать персонажа: Джесси Розовый">
+                  <circle class="graph-node-circle" cx="410" cy="80" r="24" fill="var(--bg-secondary)" stroke="#10b981" stroke-width="3">
+                  <text x="410" y="86" text-anchor="middle" font-size="20" pointer-events="none">🧢</text>
+                  <text class="graph-node-label" x="410" y="122">Джесси Розовый</text>
+                  <text class="graph-node-sublabel" x="410" y="135">Жив</text>
+                </circle></g>
+              
+                <g class="graph-node" data-node-id="stoyak-belinsky" data-faction-id="obn-podzalupinsk" role="button" tabindex="0" aria-label="Выбрать персонажа: Стояк Белинский">
+                  <circle class="graph-node-circle" cx="639" cy="165" r="24" fill="var(--bg-secondary)" stroke="#3b82f6" stroke-width="3">
+                  <text x="639" y="171" text-anchor="middle" font-size="20" pointer-events="none">🕵️‍♂️</text>
+                  <text class="graph-node-label" x="639" y="207">Стояк Белинский</text>
+                  <text class="graph-node-sublabel" x="639" y="220">Мёртв</text>
+                </circle></g>
+              
+                <g class="graph-node" data-node-id="skyler-belinskaya" data-faction-id="huizenberg-empire" role="button" tabindex="0" aria-label="Выбрать персонажа: Скулер Белинская">
+                  <circle class="graph-node-circle" cx="639" cy="335" r="24" fill="var(--bg-secondary)" stroke="#10b981" stroke-width="3">
+                  <text x="639" y="341" text-anchor="middle" font-size="20" pointer-events="none">👩‍💼</text>
+                  <text class="graph-node-label" x="639" y="377">Скулер Белинская</text>
+                  <text class="graph-node-sublabel" x="639" y="390">Жива</text>
+                </circle></g>
+              
+                <g class="graph-node" data-node-id="sosik-goodman" data-faction-id="huizenberg-empire" role="button" tabindex="0" aria-label="Выбрать персонажа: Сосик Гудман">
+                  <circle class="graph-node-circle" cx="410" cy="420" r="24" fill="var(--bg-secondary)" stroke="#10b981" stroke-width="3">
+                  <text x="410" y="426" text-anchor="middle" font-size="20" pointer-events="none">⚖️</text>
+                  <text class="graph-node-label" x="410" y="462">Сосик Гудман</text>
+                  <text class="graph-node-sublabel" x="410" y="475">Отбывает срок</text>
+                </circle></g>
+              
+                <g class="graph-node" data-node-id="gey-himbiovech" data-faction-id="gusev-empire" role="button" tabindex="0" aria-label="Выбрать персонажа: Гей Химбиович">
+                  <circle class="graph-node-circle" cx="181" cy="335" r="24" fill="var(--bg-secondary)" stroke="#f59e0b" stroke-width="3">
+                  <text x="181" y="341" text-anchor="middle" font-size="20" pointer-events="none">👤</text>
+                  <text class="graph-node-label" x="181" y="377">Гей Химбиович</text>
+                  <text class="graph-node-sublabel" x="181" y="390">Мёртв</text>
+                </circle></g>
+              
+                <g class="graph-node" data-node-id="gusev-ferangiy" data-faction-id="gusev-empire" role="button" tabindex="0" aria-label="Выбрать персонажа: Гусев Ферангий">
+                  <circle class="graph-node-circle" cx="181" cy="165" r="24" fill="var(--bg-secondary)" stroke="#f59e0b" stroke-width="3">
+                  <text x="181" y="171" text-anchor="middle" font-size="20" pointer-events="none">👤</text>
+                  <text class="graph-node-label" x="181" y="207">Гусев Ферангий</text>
+                  <text class="graph-node-sublabel" x="181" y="220">Мёртв</text>
+                </circle></g>
+              
+            </g>
+          </svg>
+        </div>
+
+        <aside class="graph-detail-panel" id="graphDetailPanel" aria-live="polite">
+        <h2 class="graph-detail-title">Валентин Белинский</h2>
+        <div style="margin-bottom: 10px;">
+          <span class="status-badge status-мёртв">Мёртв</span>
+          <span class="meta-pill" style="margin-left: 6px;">Наркоимперия Хуйзенберга</span>
+        </div>
+        <p style="font-size: 13px; color: var(--text-secondary);">Валентин «Белый» Белинский Агафонович — бывший учитель полового воспитания младших классов и подменяющий учителей химии из Подзалупинска. Переродился в легендарного варщика мефедрона под именем Хуйзенберг и закончил свою жизнь отшельником.</p>
+        <h3 style="font-size: 13px; text-transform: uppercase; letter-spacing: 0.6px; margin-top: 14px; color: var(--text-muted);">Связи (4)</h3>
+        <ul class="graph-detail-list">
+          <li class="graph-detail-rel"><strong><button type="button" class="mw-editsection-btn" data-select-node="skyler-belinskaya">Скулер Белинская</button></strong><div class="rel-type">Жена («Дорогой»)</div></li><li class="graph-detail-rel"><strong><button type="button" class="mw-editsection-btn" data-select-node="stoyak-belinsky">Стояк Белинский</button></strong><div class="rel-type">Свояк (от Стояка) / Преследователь из ОБН</div></li><li class="graph-detail-rel"><strong><button type="button" class="mw-editsection-btn" data-select-node="jesse-pinkman">Джесси Розовый</button></strong><div class="rel-type">Напарник по варке / Ученик</div></li><li class="graph-detail-rel"><strong><button type="button" class="mw-editsection-btn" data-select-node="sosik-goodman">Сосик Гудман</button></strong><div class="rel-type">Адвокат</div></li>
+        </ul>
+        <a href="../character/valentin-belinsky/" class="btn btn-primary" style="width: 100%;">Открыть досье →</a>
+      </aside>
+      </div>
+    </div>
+  </div>
+  </main>
+
+  <!-- Модальное окно глобального мгновенного поиска -->
+  <div class="modal-overlay hidden" id="searchModal" role="dialog" aria-modal="true" aria-labelledby="searchModalTitle">
+    <div class="search-modal-box">
+      <h2 id="searchModalTitle" class="visually-hidden">Поиск по энциклопедии</h2>
+      <div class="search-input-wrapper">
+        <span class="search-box-icon">🔍</span>
+        <input type="text" id="globalSearchInput" placeholder="Поиск персонажей, псевдонимов, цитат, серий..." autocomplete="off" aria-label="Поиск по энциклопедии" role="combobox" aria-autocomplete="list" aria-controls="searchResultsList" aria-expanded="false">
+        <button type="button" class="modal-close-btn" id="closeSearchBtn" aria-label="Закрыть поиск">&times;</button>
+      </div>
+      <div class="search-filters-row">
+        <span class="filter-label">Фильтр:</span>
+        <button type="button" class="filter-chip active" data-filter="all">Все</button>
+        <button type="button" class="filter-chip" data-filter="character">Персонажи</button>
+        <button type="button" class="filter-chip" data-filter="faction">Группировки</button>
+        <button type="button" class="filter-chip" data-filter="episode">Серии</button>
+      </div>
+      <div class="search-results-list" id="searchResultsList" role="listbox" aria-live="polite">
+        <!-- Результаты генерируются динамически -->
+      </div>
+      <div class="search-footer">
+        <span>Клавиши: <kbd>↑</kbd> <kbd>↓</kbd> выбор, <kbd>Enter</kbd> перейти, <kbd>ESC</kbd> закрыть</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Модальное окно: Архитектура статьи (Спецификация и стандарты Вики) -->
+  <div class="modal-overlay hidden" id="architectureModal" role="dialog" aria-modal="true" aria-labelledby="archModalTitle">
+    <div class="arch-modal-box">
+      <div class="modal-header">
+        <div class="modal-header-info">
+          <div class="modal-badge">📐 Архитектура вики-статьи</div>
+          <h3 id="archModalTitle">Пошаговый план структуры статьи</h3>
+        </div>
+        <button type="button" class="modal-close-btn" id="closeArchModalBtn" title="Закрыть" aria-label="Закрыть модальное окно">&times;</button>
+      </div>
+
+      <div class="modal-tabs" role="tablist" aria-label="Выбор типа статьи">
+        <button type="button" class="modal-tab active" data-arch-tab="character" role="tab" aria-selected="true" aria-controls="archTabCharacter">👤 План персонажа (20 пунктов)</button>
+        <button type="button" class="modal-tab" data-arch-tab="faction" role="tab" aria-selected="false" aria-controls="archTabFaction">🏛️ План группировки (8 пунктов)</button>
+      </div>
+
+      <div class="arch-modal-body">
+        <div class="arch-tab-panel" id="archTabCharacter" role="tabpanel">
+          <div class="arch-intro-card">
+            <h4>Каноничный пошаговый план статьи о персонаже</h4>
+            <p>Простая и приземлённая структура: от шапки инфобокса до финальных категорий статьи.</p>
+          </div>
+          <div class="arch-plan-grid">
+            <div class="arch-plan-item"><span class="arch-plan-num">1</span><div class="arch-plan-content"><div class="arch-plan-title">Аватар</div><div class="arch-plan-desc">Фото героя из архива (JPG/WebP) или тематический эмодзи в инфобоксе.</div></div></div>
+            <div class="arch-plan-item"><span class="arch-plan-num">2</span><div class="arch-plan-content"><div class="arch-plan-title">Имя персонажа</div><div class="arch-plan-desc">Общеизвестное имя персонажа и заголовок статьи (например, Валентин Белинский).</div></div></div>
+            <div class="arch-plan-item"><span class="arch-plan-num">3</span><div class="arch-plan-content"><div class="arch-plan-title">Полное имя</div><div class="arch-plan-desc">Паспортное ФИО (например, Валентин "Белый" Белинский Агафонович).</div></div></div>
+            <div class="arch-plan-item"><span class="arch-plan-num">4</span><div class="arch-plan-content"><div class="arch-plan-title">Псевдонимы и клички</div><div class="arch-plan-desc">Криминальные клички, прозвища и обращения героев (Хуйзенберг, Свояк, Дорогой).</div></div></div>
+            <div class="arch-plan-item"><span class="arch-plan-num">5</span><div class="arch-plan-content"><div class="arch-plan-title">Статус</div><div class="arch-plan-desc">Текущее положение (Жив / Мёртв / Отбывает срок) со штампом в верхнем правом углу статьи.</div></div></div>
+            <div class="arch-plan-item"><span class="arch-plan-num">6</span><div class="arch-plan-content"><div class="arch-plan-title">Род деятельности</div><div class="arch-plan-desc">Основная профессия (варщик мефедрона, учитель, адвокат, опер ОБН).</div></div></div>
+            <div class="arch-plan-item"><span class="arch-plan-num">7</span><div class="arch-plan-content"><div class="arch-plan-title">Дата и место рождения</div><div class="arch-plan-desc">Точная дата рождения и родной город героя (г. Подзалупинск).</div></div></div>
+            <div class="arch-plan-item"><span class="arch-plan-num">8</span><div class="arch-plan-content"><div class="arch-plan-title">Судьба</div><div class="arch-plan-desc">Дата, место и причина смерти персонажа (если персонаж мёртв).</div></div></div>
+            <div class="arch-plan-item"><span class="arch-plan-num">9</span><div class="arch-plan-content"><div class="arch-plan-title">Личная жизнь</div><div class="arch-plan-desc">Семейное положение, дети, каноничный адрес проживания и ориентация.</div></div></div>
+            <div class="arch-plan-item"><span class="arch-plan-num">10</span><div class="arch-plan-content"><div class="arch-plan-title">Появления в сериале</div><div class="arch-plan-desc">Хронология эпизодов: первое появление («Пилот»), последнее («Хуелина»), фильм («Путь розового?»).</div></div></div>
+            <div class="arch-plan-item"><span class="arch-plan-num">11</span><div class="arch-plan-content"><div class="arch-plan-title">Принадлежность</div><div class="arch-plan-desc">Группировка, организация или картель (Наркоимперия Хуйзенберга, ОБН и др.).</div></div></div>
+            <div class="arch-plan-item"><span class="arch-plan-num">12</span><div class="arch-plan-content"><div class="arch-plan-title">Арсенал и навыки</div><div class="arch-plan-desc">Оружие, химический гений, турели в багажнике, знание лазеек в законе.</div></div></div>
+            <div class="arch-plan-item"><span class="arch-plan-num">13</span><div class="arch-plan-content"><div class="arch-plan-title">Исполнитель роли</div><div class="arch-plan-desc">Актёр или создатель, сыгравший роль в сериале (Родион Маракулин и др.).</div></div></div>
+            <div class="arch-plan-item"><span class="arch-plan-num">14</span><div class="arch-plan-content"><div class="arch-plan-title">Коронная цитата</div><div class="arch-plan-desc">Главная узнаваемая фраза («Я не в пизде Скулер, я и есть пизда Скулер»).</div></div></div>
+            <div class="arch-plan-item"><span class="arch-plan-num">15</span><div class="arch-plan-content"><div class="arch-plan-title">Общие сведения</div><div class="arch-plan-desc">Краткий синопсис о роли персонажа в сюжете Подзалупинска.</div></div></div>
+            <div class="arch-plan-item"><span class="arch-plan-num">16</span><div class="arch-plan-content"><div class="arch-plan-title">Биография</div><div class="arch-plan-desc">Подробная хроника жизни, разбитая на абзацы по ключевым сериям сериала.</div></div></div>
+            <div class="arch-plan-item"><span class="arch-plan-num">17</span><div class="arch-plan-content"><div class="arch-plan-title">Личность и характер</div><div class="arch-plan-desc">Психологический портрет, повадки, привычки и моральные ориентиры.</div></div></div>
+            <div class="arch-plan-item"><span class="arch-plan-num">18</span><div class="arch-plan-content"><div class="arch-plan-title">Связи и отношения</div><div class="arch-plan-desc">Взаимоотношения с персонажами: напарник, свояк, адвокат, враг, любовник, убийца.</div></div></div>
+            <div class="arch-plan-item"><span class="arch-plan-num">19</span><div class="arch-plan-content"><div class="arch-plan-title">Интересные факты</div><div class="arch-plan-desc">Детали съёмок, пасхалки, скрытые детали сюжета и лора.</div></div></div>
+            <div class="arch-plan-item"><span class="arch-plan-num">20</span><div class="arch-plan-content"><div class="arch-plan-title">Категории</div><div class="arch-plan-desc">Энциклопедические теги классификации для удобной навигации по вики.</div></div></div>
+          </div>
+        </div>
+
+        <div class="arch-tab-panel hidden" id="archTabFaction" role="tabpanel">
+          <div class="arch-intro-card">
+            <h4>Каноничный пошаговый план статьи об организации / группировке</h4>
+            <p>Чёткая 8-шаговая структура описания синдикатов, картелей и правоохранительных органов.</p>
+          </div>
+          <div class="arch-plan-grid">
+            <div class="arch-plan-item"><span class="arch-plan-num">1</span><div class="arch-plan-content"><div class="arch-plan-title">Название</div><div class="arch-plan-desc">Официальное наименование организации или синдиката.</div></div></div>
+            <div class="arch-plan-item"><span class="arch-plan-num">2</span><div class="arch-plan-content"><div class="arch-plan-title">Лидер</div><div class="arch-plan-desc">Текущий или исторический главарь группировки.</div></div></div>
+            <div class="arch-plan-item"><span class="arch-plan-num">3</span><div class="arch-plan-content"><div class="arch-plan-title">Тип</div><div class="arch-plan-desc">Классификация (наркокартель, спецслужба, фастфуд-прикрытие, уличная банда).</div></div></div>
+            <div class="arch-plan-item"><span class="arch-plan-num">4</span><div class="arch-plan-content"><div class="arch-plan-title">Штаб-квартира</div><div class="arch-plan-desc">База операций, лаборатория или штаб в Подзалупинске.</div></div></div>
+            <div class="arch-plan-item"><span class="arch-plan-num">5</span><div class="arch-plan-content"><div class="arch-plan-title">Девиз</div><div class="arch-plan-desc">Официальный или негласный лозунг организации.</div></div></div>
+            <div class="arch-plan-item"><span class="arch-plan-num">6</span><div class="arch-plan-content"><div class="arch-plan-title">Деятельность и цели</div><div class="arch-plan-desc">Профиль операций, криминальные схемы и основные цели группировки.</div></div></div>
+            <div class="arch-plan-item"><span class="arch-plan-num">7</span><div class="arch-plan-content"><div class="arch-plan-title">История основания</div><div class="arch-plan-desc">Зарождение, ключевые войны за влияние, расцвет и крах синдиката.</div></div></div>
+            <div class="arch-plan-item"><span class="arch-plan-num">8</span><div class="arch-plan-content"><div class="arch-plan-title">Известные участники</div><div class="arch-plan-desc">Карточки причастных персонажей, входящих в состав организации.</div></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" id="copyArchPlanBtn">
+          <span class="btn-icon">📋</span> Скопировать план
+        </button>
+        <button type="button" class="btn btn-primary" id="closeArchModalBtn2">Понятно, закрыть</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Подвал сайта (Footer) -->
+  <footer class="wiki-footer">
+    <div class="footer-container">
+      <div class="footer-col">
+        <h4>О сериале и Вики</h4>
+        <p>Неофициальная база знаний и энциклопедия культового пародийного сериала «Во Все Хуёвые». Все персонажи, цитаты и события Подзалупинска бережно задокументированы.</p>
+      </div>
+      <div class="footer-col">
+        <h4>Навигация</h4>
+        <ul>
+          <li><a href="../characters/" class="quick-link" data-view="characters">Список всех персонажей</a></li>
+          <li><a href="../factions/" class="quick-link" data-view="factions">Группировки и картели</a></li>
+          <li><a href="../episodes/" class="quick-link" data-view="episodes">Серии</a></li>
+          <li><a href="../timeline/" class="quick-link" data-view="timeline">Хронология серий</a></li>
+          <li><a href="../graph/" class="quick-link" data-view="graph">Граф связей персонажей</a></li>
+          <li><button type="button" class="footer-action-link" id="exportDataBtn">Скачать архив базы (JSON)</button></li>
+          <li><button type="button" class="footer-action-link" id="resetDataBtn">Сбросить настройки</button></li>
+        </ul>
+      </div>
+      <div class="footer-col" id="footerEditingCol">
+        <h4>Редактирование</h4>
+        <p>Каноничная база знаний защищена от произвольных правок. Для ознакомления со стандартом оформления и структурой страниц используйте спецификацию:</p>
+        <button type="button" class="btn btn-secondary btn-arch-footer" id="openArchitectureBtn">
+          <span class="btn-icon">📐</span>
+          <span>Архитектура статьи</span>
+        </button>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>&copy; Энциклопедия «Во Все Хуёвые». Версия базы v2.6.</p>
+    </div>
+  </footer>
+
+  <button type="button" class="back-to-top-btn" id="backToTopBtn" aria-label="Наверх">↑ Наверх</button>
+
+  <!-- Скрипты приложения -->
+  <script src="../js/data.js?v=2.6"></script>
+  <script src="../js/app.js?v=2.6"></script>
+</body>
+</html>

@@ -4,7 +4,7 @@
  */
 
 const DEFAULT_WIKI_DATA = {
-  version: "2.5",
+  version: "2.6",
   universe: {
     title: "Во Все Хуёвые",
     superTitle: "ОФИЦИАЛЬНАЯ ПАРОДИЙНАЯ ВИКИПЕДИЯ",
@@ -451,6 +451,63 @@ const DEFAULT_WIKI_DATA = {
       year: "2025 («Фильм»)",
       title: "«Путь розового?»",
       desc: "Полнометражный фильм о побеге Джесси Розового сквозь кордоны полиции Подзалупинска к свободной жизни."
+    }
+  ],
+
+  episodes: [
+    {
+      id: "pilot-mefedrona",
+      title: "Пилот Мефедрона",
+      kind: "Серия",
+      status: "В разработке"
+    },
+    {
+      id: "zvonite-sosiku",
+      title: "Звоните Сосику",
+      kind: "Серия",
+      status: "В разработке"
+    },
+    {
+      id: "luchshe-nyuhayte-sol",
+      title: "Лучше нюхайте соль",
+      kind: "Серия",
+      status: "В разработке"
+    },
+    {
+      id: "polnaya-i-zhirnaya-mera",
+      title: "Полная и жирная мера",
+      kind: "Серия",
+      status: "В разработке"
+    },
+    {
+      id: "bez-yaytsa",
+      title: "Без яйца",
+      kind: "Серия",
+      status: "В разработке"
+    },
+    {
+      id: "skazhi-moi-siski",
+      title: "Скажи мои сиськи",
+      kind: "Серия",
+      status: "В разработке"
+    },
+    {
+      id: "ozimandiy-po-russki",
+      title: "Озимандий по-русски",
+      kind: "Серия",
+      status: "В разработке"
+    },
+    {
+      id: "huelina",
+      title: "Хуелина",
+      kind: "Серия",
+      status: "В разработке"
+    },
+    {
+      id: "put-rozovogo",
+      title: "Путь розового?",
+      kind: "Фильм",
+      status: "В разработке"
     }
   ]
 };

@@ -49,7 +49,7 @@ async function runTier3Tests(reporter) {
   }
   reporter.endTest();
 
-  reporter.startTest('Enter key on selected item closes modal and changes URL hash');
+  reporter.startTest('Enter key on selected item closes modal and navigates via History API without #');
   try {
     const env = createBrowserEnvironment();
     env.click('#openSearchBtn');
@@ -60,7 +60,8 @@ async function runTier3Tests(reporter) {
 
     const modal = env.document.getElementById('searchModal');
     assert.equal(modal.classList.contains('hidden'), true, 'Modal must close on Enter');
-    assert.equal(env.window.location.hash, '#character/stoyak-belinsky', 'Hash must navigate to character');
+    assert.equal(env.window.location.pathname, '/Vovsehuyevie/character/stoyak-belinsky/', 'Pathname must navigate to character without #');
+    assert.equal(env.window.location.hash, '', 'URL must not contain # fragment');
   } catch (e) {
     if (e.name !== 'AssertionError') throw e;
   }
@@ -69,7 +70,7 @@ async function runTier3Tests(reporter) {
   reporter.startTest('Target article is rendered into contentViewport');
   try {
     const env = createBrowserEnvironment();
-    env.navigate('#character/stoyak-belinsky');
+    env.navigate('character/stoyak-belinsky');
     const viewport = env.document.getElementById('contentViewport');
     assert.includes(viewport.textContent, 'Стояк Белинский', 'Article header must match selected character');
   } catch (e) {
@@ -80,7 +81,7 @@ async function runTier3Tests(reporter) {
   reporter.startTest('Document title is synchronized with navigated character');
   try {
     const env = createBrowserEnvironment();
-    env.navigate('#character/stoyak-belinsky');
+    env.navigate('character/stoyak-belinsky');
     assert.includes(env.document.title, 'Стояк Белинский', 'Document title must reflect navigated entity');
   } catch (e) {
     if (e.name !== 'AssertionError') throw e;
@@ -130,8 +131,8 @@ async function runTier3Tests(reporter) {
   try {
     const env = createBrowserEnvironment({ storageMode: 'restricted' });
     env.click('#themeToggleBtn');
-    env.navigate('#characters');
-    env.navigate('#factions');
+    env.navigate('characters');
+    env.navigate('factions');
     const theme = env.document.documentElement.getAttribute('data-theme');
     assert.equal(theme, 'light', 'Light theme should persist across routing');
   } catch (e) {
@@ -174,7 +175,7 @@ async function runTier3Tests(reporter) {
   try {
     const env = createBrowserEnvironment();
     env.click('#themeToggleBtn');
-    env.navigate('#characters');
+    env.navigate('characters');
     const badges = env.document.querySelectorAll('#contentViewport .status-badge');
     assert.gte(badges.length, 3, 'Should render status badges on character cards');
   } catch (e) {
@@ -229,11 +230,11 @@ async function runTier3Tests(reporter) {
   // -------------------------------------------------------------------------
   // Interaction 4: Deep Link Routing + Breadcrumb Sync + Anchor Jumps
   // -------------------------------------------------------------------------
-  reporter.startSuite('Tier 3: Deep Link Routing + Breadcrumbs + Anchors', 'Deep article landing, breadcrumbs hierarchy, and anchor jumps');
+  reporter.startSuite('Tier 3: Deep Link Routing + Breadcrumbs + Anchors', 'Deep article landing, breadcrumbs hierarchy, and section jumps without #');
 
   reporter.startTest('Deep landing on character article renders complete article structure');
   try {
-    const env = createBrowserEnvironment({ initialHash: '#character/valentin-belinsky' });
+    const env = createBrowserEnvironment({ initialPath: '/Vovsehuyevie/character/valentin-belinsky/' });
     const viewport = env.document.getElementById('contentViewport');
     assert.ok(viewport.querySelector('.article-header'), 'Article header should exist');
     assert.ok(viewport.querySelector('.infobox'), 'Infobox should exist');
@@ -245,7 +246,7 @@ async function runTier3Tests(reporter) {
 
   reporter.startTest('Breadcrumbs reflect correct hierarchy for character article');
   try {
-    const env = createBrowserEnvironment({ initialHash: '#character/valentin-belinsky' });
+    const env = createBrowserEnvironment({ initialPath: '/Vovsehuyevie/character/valentin-belinsky/' });
     const breadcrumbs = env.document.getElementById('wikiBreadcrumbs').textContent;
     assert.includes(breadcrumbs, 'Вики', 'Breadcrumbs should include root link');
     assert.includes(breadcrumbs, 'Валентин Белинский', 'Breadcrumbs should include current character name');
@@ -254,23 +255,28 @@ async function runTier3Tests(reporter) {
   }
   reporter.endTest();
 
-  reporter.startTest('Clicking section anchor #sec-biography does not destroy article DOM');
+  reporter.startTest('Clicking TOC section link scrolls smoothly without # and keeps article intact');
   try {
-    const env = createBrowserEnvironment({ initialHash: '#character/valentin-belinsky' });
-    env.navigate('#sec-biography');
+    const env = createBrowserEnvironment({ initialPath: '/Vovsehuyevie/character/valentin-belinsky/' });
+    const tocLink = env.document.querySelector('.toc-link[data-scroll-target="sec-biography"]');
+    assert.ok(tocLink, 'TOC link for sec-biography must exist');
+    assert.notIncludes(tocLink.getAttribute('href'), '#', 'TOC link href must not contain #');
+    tocLink.click();
     const viewport = env.document.getElementById('contentViewport');
-    assert.ok(viewport.querySelector('.infobox'), 'Infobox should remain intact after anchor jump');
+    assert.ok(viewport.querySelector('.infobox'), 'Infobox should remain intact after TOC scroll click');
+    assert.equal(env.window.location.hash, '', 'TOC click must not mutate URL hash');
   } catch (e) {
     if (e.name !== 'AssertionError') throw e;
   }
   reporter.endTest();
 
-  reporter.startTest('Navigating to #home restores breadcrumbs to root portal state');
+  reporter.startTest('Navigating to home restores breadcrumbs and root URL pathname');
   try {
-    const env = createBrowserEnvironment({ initialHash: '#character/valentin-belinsky' });
-    env.navigate('#home');
+    const env = createBrowserEnvironment({ initialPath: '/Vovsehuyevie/character/valentin-belinsky/' });
+    env.navigate('home');
     const breadcrumbs = env.document.getElementById('wikiBreadcrumbs').textContent;
     assert.includes(breadcrumbs, 'Главная', 'Breadcrumbs should restore to Главная');
+    assert.equal(env.window.location.pathname, '/Vovsehuyevie/', 'Pathname should return to root /Vovsehuyevie/');
   } catch (e) {
     if (e.name !== 'AssertionError') throw e;
   }
@@ -278,8 +284,8 @@ async function runTier3Tests(reporter) {
 
   reporter.startTest('Document title syncs on return to home');
   try {
-    const env = createBrowserEnvironment({ initialHash: '#character/valentin-belinsky' });
-    env.navigate('#home');
+    const env = createBrowserEnvironment({ initialPath: '/Vovsehuyevie/character/valentin-belinsky/' });
+    env.navigate('home');
     assert.includes(env.document.title, 'Во Все Хуёвые', 'Title should return to home portal title');
   } catch (e) {
     if (e.name !== 'AssertionError') throw e;
@@ -289,9 +295,9 @@ async function runTier3Tests(reporter) {
   reporter.endSuite();
 
   // -------------------------------------------------------------------------
-  // Interaction 5: Search Filter Chips + Debounced Text Input
+  // Interaction 5: Search Filter Chips + Match Highlighting + Debounced Text Input
   // -------------------------------------------------------------------------
-  reporter.startSuite('Tier 3: Search Filter Chips + Querying', 'Filter chips toggle between characters, factions, and all entities');
+  reporter.startSuite('Tier 3: Search Filter Chips + Highlighting', 'Filter chips toggle between characters, factions, episodes, and highlight matches');
 
   reporter.startTest('Clicking "Персонажи" filter chip activates chip and sets STATE.searchFilter');
   try {
@@ -339,14 +345,85 @@ async function runTier3Tests(reporter) {
   }
   reporter.endTest();
 
-  reporter.startTest('Switching filter to "Все" displays combined results');
+  reporter.startTest('Switching filter to "Серии" displays canon episodes and film');
+  try {
+    const env = createBrowserEnvironment();
+    env.click('#openSearchBtn');
+    const epChip = env.document.querySelector('.filter-chip[data-filter="episode"]');
+    assert.ok(epChip, 'Episode filter chip must exist');
+    epChip.click();
+    env.type('#globalSearchInput', 'Пилот');
+    const results = env.document.querySelectorAll('#searchResultsList .search-result-item');
+    assert.gte(results.length, 1, 'Should find Пилот Мефедрона episode');
+    const content = env.document.getElementById('searchResultsList').textContent;
+    assert.includes(content, 'Серия', 'Results should indicate type Серия');
+    assert.notIncludes(content, 'Персонаж', 'Character results should be excluded under episode filter');
+  } catch (e) {
+    if (e.name !== 'AssertionError') throw e;
+  }
+  reporter.endTest();
+
+  reporter.startTest('Search results safely highlight matched query fragments with <mark class="search-highlight">');
   try {
     const env = createBrowserEnvironment();
     env.click('#openSearchBtn');
     env.click('.filter-chip[data-filter="all"]');
     env.type('#globalSearchInput', 'Хуйзенберг');
-    const content = env.document.getElementById('searchResultsList').textContent;
-    assert.ok(content.length > 0, 'Results should contain combined matches');
+    const marks = env.document.querySelectorAll('#searchResultsList mark.search-highlight');
+    assert.gte(marks.length, 1, 'Matched substrings must be wrapped in mark.search-highlight');
+  } catch (e) {
+    if (e.name !== 'AssertionError') throw e;
+  }
+  reporter.endTest();
+
+  reporter.endSuite();
+
+  // -------------------------------------------------------------------------
+  // Interaction 6: Interactive Relationship Graph Filtering + Selection
+  // -------------------------------------------------------------------------
+  reporter.startSuite('Tier 3: Relationship Graph', 'SVG graph nodes, faction filter chips, and detail panel synchronization');
+
+  reporter.startTest('Graph route renders SVG map with all canon characters and edges');
+  try {
+    const env = createBrowserEnvironment();
+    env.navigate('graph');
+    const svg = env.document.getElementById('relationshipGraphSvg');
+    assert.ok(svg, 'Relationship graph SVG must render');
+    const nodes = env.document.querySelectorAll('.graph-node');
+    const edges = env.document.querySelectorAll('.graph-edge');
+    assert.equal(nodes.length, 7, 'Graph must display 7 character nodes');
+    assert.gte(edges.length, 5, 'Graph must display relationship edges');
+  } catch (e) {
+    if (e.name !== 'AssertionError') throw e;
+  }
+  reporter.endTest();
+
+  reporter.startTest('Clicking graph node updates detail sidebar panel with character relations');
+  try {
+    const env = createBrowserEnvironment();
+    env.navigate('graph');
+    const gusevNode = env.document.querySelector('.graph-node[data-node-id="gusev-ferangiy"]');
+    assert.ok(gusevNode, 'Gusev graph node must exist');
+    gusevNode.click();
+    const panel = env.document.getElementById('graphDetailPanel');
+    assert.ok(panel, 'Graph detail panel must exist');
+    assert.includes(panel.textContent, 'Гусев Ферангий', 'Detail panel must update to clicked character');
+    assert.includes(panel.innerHTML, 'character/gusev-ferangiy/', 'Detail panel CTA must link hash-free to dossier');
+  } catch (e) {
+    if (e.name !== 'AssertionError') throw e;
+  }
+  reporter.endTest();
+
+  reporter.startTest('Clicking graph faction filter chip toggles active state and dims unrelated nodes');
+  try {
+    const env = createBrowserEnvironment();
+    env.navigate('graph');
+    const obnChip = env.document.querySelector('.filter-chip[data-graph-faction="obn-podzalupinsk"]');
+    assert.ok(obnChip, 'OBN faction filter chip must exist on graph page');
+    obnChip.click();
+    assert.ok(obnChip.classList.contains('active'), 'Clicked faction chip must become active');
+    const gusevNode = env.document.querySelector('.graph-node[data-node-id="gusev-ferangiy"]');
+    assert.ok(gusevNode.classList.contains('dimmed'), 'Unrelated node outside OBN filter should be dimmed');
   } catch (e) {
     if (e.name !== 'AssertionError') throw e;
   }
